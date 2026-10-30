@@ -12,7 +12,8 @@ Everything it knows lives in plain text files in this folder. You can open and e
 
 1. Install Claude Code and sign in with your Claude account:
    https://code.claude.com/docs/en/quickstart
-2. Put this folder somewhere you will keep it, for example Documents.
+2. Unzip it anywhere. On the first run Claude asks what to call it and where it should live,
+   and moves itself there.
 3. Open a terminal in this folder and type `claude`, then press Enter.
 4. Say hello. The first time, Claude checks your computer, installs what it can, then interviews
    you one question at a time. Talk through Wispr Flow the whole way if you like.

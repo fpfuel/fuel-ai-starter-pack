@@ -7,10 +7,26 @@ description: First-run setup. Checks this computer and installs what is missing,
 
 A conversation, not a form. One question per message, always.
 
-## Part 1: check this computer (about 2 minutes)
+## Part 0: my name and my home
 
 0. If this is the first reply of the session, it opens with exactly: "I got it, and I'm starting to set up your AI kickstart environment."
    Do not run a quote, a rate, a product search or any other demo before Part 3.
+   If `Brain/Context/me.md` already has a "My assistant" section naming this folder, skip to Part 1.
+1. Ask: "Where do you want me to live, and what should I be called?" Say in one line that the
+   name is hers to pick, and suggest her home folder (on Windows `C:\Users\<her name>`, on a Mac
+   `/Users/<her name>`). Steer away from OneDrive, Dropbox or any company-synced folder: her keys
+   file would sync with it.
+2. On her own computer, run `python .claude/tools/rehome.py --name "<name>" --to "<parent folder>"`.
+   It copies everything into `<parent folder>/<name>`, puts the name in, and points memory there.
+   Then say, in plain words: "I've moved into <the new folder>. Close this window, open Claude Code
+   in that folder, and say hello. We pick up right where we left off." Stop here; the rest of
+   setup runs in the new folder.
+3. In a cloud session, run `python .claude/tools/rehome.py --name "<name>" --here` instead and go
+   straight on: say in one line that in the cloud she starts each session from this repository,
+   and her own computer is where I can keep a permanent home.
+
+## Part 1: check this computer (about 2 minutes)
+
 1. Say in one short paragraph what is about to happen: a quick computer check, then about
    twenty minutes of questions she can answer by voice, then a test quote.
 2. Run `python .claude/tools/env_check.py --fix`. If `python` is not found, try `py`, then
