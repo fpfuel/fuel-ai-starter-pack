@@ -78,6 +78,12 @@ Copilot cannot see M-Files. Open your orders and quotes list in M-Files, sort by
 date, and dictate it to Claude in this shape: customer, item, status, due date. Claude
 turns it into the focus list.
 
+## 14. Meeting recap
+
+Using the recap and transcript of my meeting [meeting name] on [date], list: who was there,
+what was decided, what I promised and by when, what they promised and by when, and any
+quote, order or artwork request with item, quantity and date. Short bullets.
+
 ## Results
 
 Note here which prompts work in your Copilot and which need rewording.

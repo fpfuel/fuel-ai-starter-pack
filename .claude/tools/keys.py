@@ -6,6 +6,7 @@ installed. Names the tools use:
 
   SAGE_ACCT_ID, SAGE_LOGIN_ID, SAGE_API_KEY      SAGE Connect (product search)
   PIPEDRIVE_API_TOKEN, PIPEDRIVE_DOMAIN           Pipedrive (contacts and activities)
+  FIREFLIES_API_KEY                               Fireflies (meeting transcripts), optional
 
   python .claude/tools/keys.py     lists which names are filled in. Never shows a value.
 """
@@ -20,7 +21,7 @@ from xml.etree import ElementTree as ET
 PACK_ROOT = Path(__file__).resolve().parents[2]
 KEYS_FILE = PACK_ROOT / "secrets" / "keys.xlsx"
 NS = {"m": "http://schemas.openxmlformats.org/spreadsheetml/2006/main"}
-KNOWN = ("SAGE_ACCT_ID", "SAGE_LOGIN_ID", "SAGE_API_KEY", "PIPEDRIVE_API_TOKEN", "PIPEDRIVE_DOMAIN")
+KNOWN = ("SAGE_ACCT_ID", "SAGE_LOGIN_ID", "SAGE_API_KEY", "PIPEDRIVE_API_TOKEN", "PIPEDRIVE_DOMAIN", "FIREFLIES_API_KEY")
 
 _cache = None
 

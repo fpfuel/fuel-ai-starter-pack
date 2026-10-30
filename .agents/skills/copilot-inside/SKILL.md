@@ -20,6 +20,7 @@ can. This skill makes the two work together without crossing the firewall.
    - open loops with a customer: a short list of what is owed and by whom
    - a thread summary: the decision, the open question, the next step
    - a reply: a draft in her voice, under 120 words, that she pastes back into Outlook
+   - a Teams meeting recap (prompt 14): run `/meetings` on it
 5. Nothing is sent from here. Karen sends from Outlook.
 
 ## Keep it clean

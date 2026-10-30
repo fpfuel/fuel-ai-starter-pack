@@ -35,6 +35,22 @@ A conversation, not a form. One question per message, always.
    4. Customers (`customers.md`): top customers, locations, terms, tiers, programs.
    5. Workflows (`workflows.md`): xlsx or PDF to customers, what the order-entry assistant needs.
    6. Current focus (`current-focus.md`): this week, what keeps falling through.
+   7. Meetings (`Brain/Context/work.md`, under "Meetings"). Ask "How do you record meetings
+      right now?" Then ask "Do you want me to work from your meetings?" and offer the ways in
+      one short message, in plain words:
+      - Teams meetings at work: Copilot can take the notes if her Copilot license includes it.
+        To check: after a Teams meeting, open it from the Teams calendar; a Recap tab with AI
+        notes means it does. Then `/meetings` works from a Copilot recap she pastes here.
+      - Fireflies: records her calls on Zoom, Google Meet or Teams into her own Fireflies
+        account, and Claude reads them with her Fireflies key (step 9). The free plan works.
+      - Notion: if she keeps meeting notes in Notion, she connects Notion once at claude.ai,
+        Settings, Connectors, and Claude reads them from there.
+      - Anything else (Otter, Zoom's own summary, Wispr Flow, paper): she pastes or saves the
+        transcript or summary, and `/meetings` works from that.
+      - None of these: that is fine. Write "not recording meetings" and move on.
+      If she wants an outside recorder in ASB's own Teams meetings, say in one sentence that
+      this is the company's call, so she checks with IT first.
+      Write under "Meetings": how she records now, the way she chose, and whether it is set up.
 6. After each topic, rewrite that file: remove "(confirm)" from what she verified, correct what she
    changed, fill what she answered, leave "unknown" where she did not know. Keep the headings.
    Tell her the file name in one line.
@@ -49,7 +65,10 @@ A conversation, not a form. One question per message, always.
    Ask her to open `secrets/keys.example.xlsx`, save a copy in the same folder as `keys.xlsx`, and
    paste the values there herself. Never in chat. SAGE: account number, login and API key from
    sagemember.com, Users tab. Pipedrive: her company name before `.pipedrive.com`, and the token
-   from Settings, Personal preferences, API. Then run `python .claude/tools/keys.py` and read
+   from Settings, Personal preferences, API. Fireflies, if she chose it in topic 7: the key from
+   app.fireflies.ai, Integrations, Fireflies API, as `FIREFLIES_API_KEY`; then run
+   `python .agents/skills/meetings/tools/fireflies.py check` and read back how many meetings it
+   found. Then run `python .claude/tools/keys.py` and read
    back which names are filled (never values).
 10. Never write anything from inside the firewall: no Outlook content, no M-Files data, no
     company logins. If she offers one, decline in one sentence and move on.

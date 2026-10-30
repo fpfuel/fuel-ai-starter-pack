@@ -25,6 +25,11 @@ Day-to-day detail (suppliers, customers, workflows, this week) lives in `interna
 Pipedrive (my CRM; only I use it), supplier websites, SAGE, hawaiipromo.com, the UPS calculator,
 my Excel quote sheet, Illustrator and Photoshop, Wispr Flow, Claude (confirm)
 
+## Meetings
+
+- How I record meetings now: (set in setup)
+- The way Claude reads them: (set in setup)
+
 ## Still to fill in
 
 - Approximate quotes and orders per month:
