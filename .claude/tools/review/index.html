@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sourcing review</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #fff; --ink: #111; --ink-2: #555; --muted: #767676; --line: #e5e5e5; --line-strong: #cfcfcf;
+    --frame: #f3f3f3; --band: #f7f7f7; --warn: #8a4a12;
+    --series-1: #2a78d6; --series-2: #eb6834; --series-3: #1baf7a;
+    --sans: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.5 var(--sans); }
+  a { color: var(--ink); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+  a:hover { text-decoration-thickness: 2px; }
+  :focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; border-radius: 2px; }
+  h1, h2, h3 { font-weight: 700; letter-spacing: -0.01em; margin: 0; }
+  h1 { font-size: 26px; line-height: 1.2; }
+  h2 { font-size: 18px; line-height: 1.3; }
+  h3 { font-size: 17px; line-height: 1.3; }
+  p { margin: 0; }
+  .v2 { font-variant-numeric: tabular-nums; }
+  .muted { color: var(--muted); }
+  .flag { color: var(--warn); }
+  small { font-size: 12px; line-height: 1.4; color: var(--muted); display: block; }
+  button, select, input, textarea { font: inherit; color: var(--ink); }
+  .btn { min-height: 48px; padding: 8px 18px; border-radius: 2px; border: 1px solid var(--ink); background: #fff; cursor: pointer; font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; transition: background-color .12s ease; }
+  .btn:hover { background: var(--band); }
+  .btn:active { background: var(--line); }
+  .btn.primary { background: var(--ink); color: #fff; }
+  .btn.primary:hover { background: #000; }
+  .btn.primary:disabled { background: #c4c4c4; border-color: #c4c4c4; cursor: not-allowed; }
+  .btn.danger { color: #b3261e; border-color: #b3261e; }
+  .btn.danger:hover { background: #fdf3f2; }
+  .btn.wide { width: 100%; }
+  .link-btn { background: none; border: 0; padding: 0; color: var(--ink); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; min-height: 44px; font-size: 13px; }
+  .link-btn:hover { text-decoration-thickness: 2px; }
+
+  /* top bar: lululemon site header */
+  .top { display: flex; align-items: center; gap: 32px; height: 48px; padding: 0 48px; border-bottom: 1px solid var(--line); }
+  .top .brand { font-weight: 700; font-size: 15px; }
+  .top nav { display: flex; gap: 24px; }
+  .top nav .link-btn { text-decoration: none; font-size: 13px; min-height: 44px; display: inline-flex; align-items: center; }
+  .top nav .link-btn:hover { text-decoration: underline; }
+  .top nav .fb-mobile { display: none; }
+  .wrap { max-width: 1340px; margin: 0 auto; padding: 22px 48px 120px; }
+
+  /* request block: adidas search results header */
+  .request { padding: 6px 0 22px; border-bottom: 1px solid var(--line); margin-bottom: 8px; }
+  .request .k { font-size: 12px; color: var(--ink-2); }
+  .request h1 { margin-top: 4px; font-weight: 400; letter-spacing: 0; }
+  .request .facts { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 6px 22px; font-size: 13px; color: var(--ink-2); }
+  .request .facts b { color: var(--ink); font-weight: 700; }
+
+  /* feedback tab: lululemon right-edge Feedback */
+  .fb-tab { position: fixed; right: 0; top: 50%; transform: translateY(-50%); z-index: 15; writing-mode: vertical-rl; rotate: 180deg; border: 1px solid var(--line-strong); border-left: 0; background: #fff; color: var(--ink-2); font-size: 11px; letter-spacing: .03em; padding: 12px 7px; cursor: pointer; border-radius: 0 4px 4px 0; min-height: 0; }
+  .fb-tab:hover { color: var(--ink); border-color: var(--ink); }
+  .fb-tab:focus-visible { outline-offset: -3px; }
+
+  /* step headings: Uvodo checkout */
+  .step { display: flex; align-items: center; gap: 12px; }
+  .step .n { width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--line-strong); display: grid; place-items: center; font-size: 12px; flex: 0 0 auto; }
+  .step .n.done { background: var(--ink); border-color: var(--ink); color: #fff; }
+  .step .n.done::before { content: "\2713"; }
+
+  /* option rows: GetYourGuide results list */
+  .rows { list-style: none; margin: 0; padding: 0; }
+  .row { display: grid; grid-template-columns: 220px minmax(0, 1fr) 220px; gap: 0 28px; padding: 24px 0; border-bottom: 1px solid var(--line); }
+  .row.sel { background: var(--band); margin: 0 -16px; padding: 24px 16px; }
+  .photo { aspect-ratio: 5 / 6; background: var(--frame); overflow: hidden; display: grid; place-items: center; }
+  .photo img { width: 100%; height: 100%; object-fit: contain; display: block; padding: 18px; mix-blend-mode: multiply; }
+  .row.sel .photo { box-shadow: inset 0 0 0 2px var(--ink); }
+  .thumbs { display: flex; gap: 6px; margin-top: 8px; overflow-x: auto; }
+  .thumbs button { flex: 0 0 auto; width: 40px; height: 40px; padding: 0; border: 1px solid var(--line); background: var(--frame); cursor: pointer; overflow: hidden; }
+  .thumbs button img { width: 100%; height: 100%; object-fit: contain; display: block; mix-blend-mode: multiply; }
+  .thumbs button:hover { border-color: var(--ink); }
+  .thumbs button[aria-pressed="true"] { border: 2px solid var(--ink); }
+  .rank { font-size: 12px; color: var(--muted); }
+  .name { margin-top: 2px; }
+  .sup { margin-top: 4px; color: var(--ink-2); font-size: 13px; }
+  .cost { margin-top: 10px; font-size: 14px; }
+  .cost b { font-weight: 700; }
+  .cost .sep { color: var(--line-strong); padding: 0 8px; }
+  .block { margin-top: 16px; }
+  .block h4 { margin: 0 0 6px; font-size: 12px; font-weight: 700; }
+  .opts { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px 20px; }
+  .opts li { display: grid; grid-template-columns: 1fr auto; gap: 0 10px; font-size: 13px; padding: 8px 0 0; border-top: 1px solid var(--line-strong); }
+  .opts .svc { font-weight: 700; }
+  .opts .amt { text-align: right; font-weight: 700; }
+  .opts .sub { grid-column: 1 / -1; color: var(--ink-2); font-size: 12px; display: flex; justify-content: space-between; gap: 10px; }
+  .notes { margin-top: 6px; font-size: 12px; color: var(--ink-2); }
+  .facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 28px; font-size: 13px; }
+  .facts div { display: grid; grid-template-columns: 110px 1fr; gap: 10px; border-top: 1px solid var(--line); padding-top: 6px; }
+  .facts dt { color: var(--ink-2); }
+  .facts dd { margin: 0; }
+  .breaks { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px 0; font-size: 13px; }
+  .breaks li { display: grid; grid-template-rows: auto auto; gap: 2px; padding: 8px 20px 0 0; border-top: 1px solid var(--line-strong); min-width: 96px; }
+  .breaks .q { color: var(--ink-2); font-size: 12px; }
+  .breaks .n { font-weight: 400; }
+  .breaks .k { color: var(--ink-2); font-size: 12px; }
+  .breaks li.now .n { font-weight: 700; }
+  .breaks li.now .q { color: var(--ink); }
+  .legend { display: flex; gap: 12px; flex-wrap: wrap; font-size: 12px; color: var(--ink-2); margin-bottom: 6px; }
+  .legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; background: var(--c); }
+  .bar { display: flex; height: 12px; gap: 2px; width: 100%; max-width: 520px; }
+  .bar .seg { height: 100%; min-width: 2px; background: var(--c); }
+  .bar .seg:first-child { border-radius: 3px 0 0 3px; }
+  .bar .seg.last { border-radius: 0 3px 3px 0; }
+  .bar .rest { flex: 1; }
+  .bar-total { margin-top: 6px; font-size: 12px; color: var(--ink-2); }
+  .side { text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+  .side .per { font-size: 24px; font-weight: 700; line-height: 1.1; }
+  .side .per small { font-size: 12px; font-weight: 400; margin-top: 2px; }
+  .side .tot { font-size: 13px; color: var(--ink-2); }
+  .side .best { font-size: 12px; color: var(--ink); }
+  .side .btn { margin-top: 8px; width: 100%; }
+
+  /* layout: Urban Outfitters checkout */
+  .cols { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 48px; align-items: start; margin-top: 40px; }
+  .aside-wrap { position: sticky; top: 16px; }
+
+  /* shipping: PayPal shipping rates */
+  .ship > p { color: var(--ink-2); margin: 8px 0 16px; }
+  .rates { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+  .rate { display: grid; grid-template-columns: auto 1fr auto; gap: 2px 14px; align-items: start; padding: 14px 16px; border: 1px solid var(--line-strong); background: #fff; cursor: pointer; }
+  .rate:hover { border-color: var(--ink); }
+  .rate.on { background: var(--band); border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+  .rate input { width: 18px; height: 18px; margin: 2px 0 0; accent-color: var(--ink); }
+  .rate .t { font-weight: 700; }
+  .rate .d { grid-column: 2; color: var(--ink-2); font-size: 13px; }
+  .rate .p { font-weight: 700; text-align: right; }
+  .rate .s { grid-column: 3; text-align: right; font-size: 12px; }
+
+  /* quote details: lululemon checkout form */
+  .form { margin-top: 40px; }
+  .form > p { color: var(--ink-2); margin: 8px 0 16px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 16px; }
+  .field { display: grid; gap: 6px; align-content: start; }
+  .field label { font-size: 12px; }
+  .field input { min-height: 44px; padding: 8px 12px; border: 1px solid var(--line-strong); border-radius: 2px; background: #fff; width: 100%; }
+  .field input:hover { border-color: var(--ink); }
+  .field input:focus-visible { border-radius: 2px; }
+
+  /* summary: Urban Outfitters order summary */
+  .summary { background: #fff; border: 1px solid var(--line-strong); padding: 18px 18px 20px; }
+  .summary h2 { font-size: 16px; }
+  .summary .pick { margin: 10px 0 14px; color: var(--ink-2); font-size: 13px; display: grid; gap: 2px; }
+  .summary .pick b { color: var(--ink); }
+  .lines { display: grid; gap: 6px; padding: 12px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); font-size: 13px; }
+  .lines div { display: flex; justify-content: space-between; gap: 12px; }
+  .lines .tot { font-weight: 700; font-size: 15px; padding-top: 4px; }
+  .summary .btn { margin-top: 14px; }
+  .summary .result { margin-top: 12px; font-size: 13px; color: var(--ink-2); }
+  .summary .result a { display: inline-flex; min-height: 44px; align-items: center; }
+
+  /* quotes list: Gusto documents */
+  .docs { margin-top: 40px; }
+  .docs table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 13px; }
+  .docs th { text-align: left; font-weight: 700; padding: 8px 0; border-bottom: 1px solid var(--line-strong); font-size: 12px; }
+  .docs td { padding: 10px 0; border-bottom: 1px solid var(--line); vertical-align: middle; overflow-wrap: anywhere; }
+  .docs td.act { text-align: right; white-space: nowrap; }
+  .docs td.act a, .docs td.act button { margin-left: 16px; display: inline-flex; align-items: center; min-height: 44px; }
+  .docs .none { color: var(--ink-2); margin-top: 10px; }
+
+  /* history panel: Shop search history */
+  .history { position: fixed; inset: 0; z-index: 20; display: none; }
+  .history.open { display: block; }
+  .history .scrim { position: absolute; inset: 0; background: rgba(0, 0, 0, .35); }
+  .history .panel { position: absolute; top: 12px; left: 12px; bottom: 12px; width: min(360px, calc(100% - 24px)); background: #fff; border-radius: 16px; box-shadow: 0 20px 60px -20px rgba(0,0,0,.4); padding: 18px; overflow: auto; }
+  .history .close { width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line); background: #fff; cursor: pointer; font-size: 18px; }
+  .history h2 { margin: 12px 0 10px; font-size: 22px; }
+  .runs { list-style: none; margin: 0; padding: 0; }
+  .runs button { display: grid; grid-template-columns: 44px 1fr; gap: 12px; align-items: center; width: 100%; text-align: left; padding: 8px; border: 0; border-radius: 10px; background: none; cursor: pointer; min-height: 60px; }
+  .runs button:hover, .runs button[aria-current="true"] { background: var(--band); }
+  .runs img { width: 44px; height: 44px; object-fit: contain; background: var(--frame); border-radius: 8px; mix-blend-mode: multiply; }
+  .runs .t { font-weight: 700; }
+  .runs .w { font-size: 12px; color: var(--muted); }
+
+  /* dialogs: Lindy feedback, Mistral delete */
+  dialog { border: 0; border-radius: 8px; padding: 22px 22px 20px; width: min(520px, calc(100% - 32px)); box-shadow: 0 30px 80px -30px rgba(0,0,0,.5); color: var(--ink); }
+  dialog::backdrop { background: rgba(0, 0, 0, .4); }
+  dialog h2 { font-size: 18px; }
+  dialog > p { color: var(--ink-2); margin: 6px 0 14px; }
+  dialog .row { display: flex; justify-content: flex-end; gap: 10px; margin-top: 14px; }
+  .editor { min-height: 110px; padding: 10px 12px; border: 1px solid var(--line-strong); border-radius: 4px; background: #fff; white-space: pre-wrap; }
+  .editor:focus-visible { border-radius: 4px; }
+  .editor a { color: #1a56db; }
+  .hint { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .status { font-size: 13px; color: var(--ink-2); margin-top: 10px; min-height: 1.4em; }
+
+  /* empty state: Blue Apron orders */
+  .empty { min-height: 50vh; display: grid; place-items: center; text-align: center; padding: 24px; }
+  .empty h2 { font-size: 22px; }
+  .empty p { color: var(--ink-2); margin-top: 6px; }
+
+  /* mobile sticky bar: Faire cart */
+  .stickybar { display: none; }
+
+  @media (max-width: 960px) {
+    .row { grid-template-columns: 160px minmax(0, 1fr); }
+    .side { grid-column: 1 / -1; flex-direction: row; align-items: center; justify-content: space-between; text-align: left; margin-top: 14px; }
+    .side .per { font-size: 20px; }
+    .side .btn { width: auto; margin: 0; }
+    .opts { grid-template-columns: 1fr; }
+    .facts { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 860px) {
+    .top { padding: 0 14px; gap: 18px; }
+    .wrap { padding: 16px 14px 110px; }
+    .cols { grid-template-columns: 1fr; gap: 36px; }
+    .aside-wrap { position: static; }
+    .grid2 { grid-template-columns: 1fr; }
+    .fb-tab { display: none; }
+    .top nav .fb-mobile { display: inline-flex; }
+    .row { grid-template-columns: 1fr; gap: 14px 0; }
+    .thumbs button { width: 44px; height: 44px; }
+    .row.sel { margin: 0 -14px; padding: 20px 14px; }
+    .photo { aspect-ratio: 4 / 3; }
+    .side { flex-wrap: wrap; }
+    .side .btn { width: 100%; margin-top: 10px; }
+    .sup a, .opts .sub a, .rate .s a, .facts a { display: inline-flex; align-items: center; min-height: 44px; }
+    .stickybar { display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; background: #fff; border-top: 1px solid var(--line-strong); box-shadow: 0 -8px 24px -16px rgba(0,0,0,.3); }
+    .stickybar .k { font-size: 12px; color: var(--ink-2); }
+    .stickybar .v { font-weight: 700; font-size: 17px; }
+    .stickybar[hidden] { display: none; }
+  }
+</style>
+</head>
+<body>
+<header class="top" data-region="header" data-ref="https://mobbin.com/screens/764af7f5-67bf-4b76-92f6-9a85e654efbe" data-took="lululemon site header on the Compare Products page: a slim white bar with a thin bottom rule, the brand name at the left and plain small navigation links beside it">
+  <span class="brand">Sourcing review</span>
+  <nav aria-label="Pages" data-region="header-nav" data-ref="https://mobbin.com/screens/764af7f5-67bf-4b76-92f6-9a85e654efbe" data-took="lululemon site header: the row of plain small text links to the right of the brand, no underline until hover">
+    <button class="link-btn" id="open-history" type="button" aria-haspopup="dialog" aria-controls="history">Sourcing runs</button>
+  </nav>
+</header>
+
+<div class="wrap">
+  <main id="main"></main>
+
+  <aside class="history" id="history" data-region="run-history" data-ref="https://mobbin.com/screens/9d9651df-1cba-449a-852d-d7d78e607f10" data-took="Shop Search history: a left overlay panel with a round close button, a title, and one row per past search with a small product image, the words of the search and when it ran" aria-label="Sourcing runs" hidden>
+    <div class="scrim" id="history-scrim"></div>
+    <div class="panel" role="dialog" aria-modal="true" aria-labelledby="history-title" data-region="run-history-panel" data-ref="https://mobbin.com/screens/9d9651df-1cba-449a-852d-d7d78e607f10" data-took="Shop Search history: the panel itself, rounded, pinned to the left edge with the close button at its top">
+      <button class="close" id="close-history" type="button" aria-label="Close">×</button>
+      <h2 id="history-title">Sourcing runs</h2>
+      <ul class="runs" id="runs"></ul>
+    </div>
+  </aside>
+
+  <dialog id="confirm-delete" data-region="delete-dialog" data-ref="https://mobbin.com/screens/11487039-8831-478a-9b3e-a5251899b5e5" data-took="Mistral AI files: a confirm dialog that names the action, says what happens, and offers Cancel beside a red Delete" aria-labelledby="del-title">
+    <h2 id="del-title">Delete this quote?</h2>
+    <p id="del-text"></p>
+    <div class="row"><button class="btn" id="del-cancel" type="button">Cancel</button><button class="btn danger" id="del-go" type="button">Delete</button></div>
+  </dialog>
+
+  <div class="stickybar" id="stickybar" data-region="mobile-selection-bar" data-ref="https://mobbin.com/screens/a05f6882-9983-41bb-a564-6a42b266bbd1" data-took="Faire cart: a bar fixed to the bottom with the order total on the left and the one next-step button on the right, shown once something is selected" hidden>
+    <div><div class="k" id="sb-k"></div><div class="v" id="sb-v"></div></div>
+    <button class="btn primary" id="sb-go" type="button">Build quote</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  const $ = (s, el) => (el || document).querySelector(s);
+  const money = v => v == null || isNaN(v) ? '' : '$' + Number(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const plural = (q, n) => { const w = (q || '').trim(); return n === 1 ? w : (w.endsWith('s') ? w : w + 's'); };
+  const whenText = iso => { const d = new Date(iso); return isNaN(d) ? '' : d.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }); };
+  const ago = iso => { const ms = Date.now() - new Date(iso); if (isNaN(ms)) return ''; const m = Math.round(ms / 60000); if (m < 60) return m + ' min ago'; const h = Math.round(m / 60); if (h < 24) return h + ' h ago'; return whenText(iso); };
+  const GE = 0.04712;
+  const stepHead = (text, done) => `<h2 class="step"><span class="n${done ? ' done' : ''}"></span>${esc(text)}</h2>`;
+
+  const STATIC = !!window.__RUN__;
+  const quoteHref = f => '/quotes/' + String(f).split('/').map(encodeURIComponent).join('/');
+  function srcLink(o, c) {
+    if (o.carrier !== 'UPS') return `<a href="${esc(o.source)}" target="_blank" rel="noopener">source</a>`;
+    if (STATIC) return `<span class="muted" title="Retype these at ups.com, Calculate Time and Cost">UPS: ${esc(o.inputs || '')}</span>`;
+    return `<button type="button" class="link-btn ups-show" data-cand="${esc(c.id)}" title="${esc(o.inputs || '')}">source</button>`;
+  }
+  document.addEventListener('click', async e => {
+    const b = e.target.closest('.ups-show'); if (!b) return;
+    e.preventDefault(); e.stopPropagation();
+    const was = b.textContent; b.textContent = 'opening UPS in Chrome…'; b.disabled = true;
+    try {
+      const r = await fetch('/api/ups-show', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ run: state.file, candidateId: b.dataset.cand }) });
+      const j = await r.json().catch(() => ({}));
+      b.textContent = r.ok ? 'look for the Chrome window' : (j.error || 'could not open');
+    } catch (err) { b.textContent = 'could not open'; }
+    setTimeout(() => { b.textContent = was; b.disabled = false; }, 25000);
+  }, true);
+
+  const state = { file: null, stamp: null, pinned: null, runs: [], data: null, cands: [], sel: null, opt: null, quotes: [], form: {} };
+
+  async function loadRuns() {
+    if (STATIC) { state.runs = []; $('#runs').innerHTML = '<li class="muted">This is a saved copy of one run.</li>'; return; }
+    const r = await fetch('/api/runs'); state.runs = r.ok ? await r.json() : [];
+    $('#runs').innerHTML = state.runs.map(x => `<li><button type="button" data-file="${esc(x.file)}" aria-current="${x.file === state.file}">${x.image ? `<img src="${esc(x.image)}" alt="" loading="lazy">` : '<span></span>'}<span><span class="t">${esc(x.qty)} ${esc(plural(x.query, x.qty))} to ${esc(x.shipToLabel || x.shipTo)}</span><br><span class="w">${esc(ago(x.generated))} · ${x.candidates} options</span></span></button></li>`).join('')
+      || '<li class="muted">No runs yet.</li>';
+  }
+
+  async function show(file) {
+    let data;
+    if (STATIC) { data = window.__RUN__; } else {
+      const r = await fetch(file ? '/api/run?f=' + encodeURIComponent(file) : '/api/latest');
+      if (r.status === 204 || !r.ok) { renderEmpty(); return; }
+      data = await r.json();
+    }
+    const f = file || data.file || (state.runs[0] && state.runs[0].file) || '';
+    if (f === state.file && data.generated === state.stamp) return;
+    state.file = f; state.stamp = data.generated; state.data = data; state.sel = null; state.opt = null;
+    render();
+  }
+
+  function renderEmpty() {
+    if (state.file === null && state.data === null && $('#main').children.length) return;
+    state.file = null; state.data = null;
+    $('#main').innerHTML = `<section class="empty" data-region="empty-state" data-ref="https://mobbin.com/screens/48d4c1f0-8449-4370-be5b-fb96f887cdbb" data-took="Blue Apron Orders: a centred short heading with one line beneath saying when something will appear here" aria-label="No runs yet"><div><h2>No runs yet</h2><p>Options will appear here after you ask Claude Code to source something.</p></div></section>`;
+    $('#stickybar').hidden = true;
+  }
+
+  function freightList(c, unit) {
+    const opts = (c.freight && c.freight.options) || [];
+    const el = (c.freight && c.freight.eligibility) || {};
+    const notes = (el.notes || []).concat(c.freight.problems || []);
+    if (!opts.length) return `<p>${esc((c.freight.problems || []).join(' ') || 'No rates')}</p>` + (notes.length ? `<p class="notes">${esc(notes.join('. '))}</p>` : '');
+    return `<ul class="opts">${opts.slice(0, 3).map(o => `<li><span class="svc">${esc(svcName(o))}</span><span class="amt v2">${money(o.totalUSD)}</span><span class="sub"><span>${esc(short(o.delivery))}${o.note && /^repack/.test(o.note) ? ' · repack into USPS boxes' : ''}</span>${srcLink(o, c)}</span></li>`).join('')}</ul>
+      <p class="notes">${esc(c.cartons)} cartons of ${esc(c.carton.units)}, ${esc(c.carton.lbs)} lb, ${esc(c.carton.L)}×${esc(c.carton.W)}×${esc(c.carton.H)} in${el.lengthPlusGirthIn ? `, length plus girth ${esc(el.lengthPlusGirthIn)} in` : ''}${c.carton.assumedFrom ? ` <span class="flag">(carton not shown by the supplier, assumed from ${esc(c.carton.assumedFrom)})</span>` : ''}. ${opts.length} options in all; all of them appear below once this ${esc(unit)} is selected.${notes.length ? ' ' + esc(notes.join('. ')) + '.' : ''}</p>`;
+  }
+
+  function breaksTable(c) {
+    return `<ul class="breaks">${(c.breaks || []).map(b => `<li class="${b.qty === c.breakUsed ? 'now' : ''}"><span class="q">${b.qty.toLocaleString('en-US')}${b.qty === c.breakUsed ? ' (yours)' : ''}</span><span class="n v2">${money(b.net)}</span><span class="k v2">catalog ${money(b.catalog)}</span></li>`).join('')}</ul>`;
+  }
+
+  function moneyBar(c, maxTotal) {
+    const L = c.landed || { goodsUSD: c.goodsUSD || 0, setupUSD: c.setupUSD || 0, freightUSD: 0, totalUSD: (c.goodsUSD || 0) + (c.setupUSD || 0) };
+    const pct = v => (100 * v / maxTotal).toFixed(2) + '%';
+    const segs = [['Goods', L.goodsUSD, 'var(--series-1)'], ['Setup', L.setupUSD, 'var(--series-2)'], ['Freight', L.freightUSD, 'var(--series-3)']].filter(s => s[1] > 0);
+    const share = L.totalUSD ? Math.round(100 * L.freightUSD / L.totalUSD) : 0;
+    return `<div class="legend"><span style="--c:var(--series-1)">Goods</span><span style="--c:var(--series-2)">Setup</span><span style="--c:var(--series-3)">Freight</span></div>
+      <div class="bar" role="img" aria-label="Goods ${money(L.goodsUSD)}, setup ${money(L.setupUSD)}, freight ${money(L.freightUSD)}">${segs.map((s, k) => `<div class="seg${k === segs.length - 1 ? ' last' : ''}" style="--c:${s[2]};width:${pct(s[1])}" title="${s[0]} ${money(s[1])}"></div>`).join('')}<div class="rest"></div></div>
+      <p class="bar-total v2">goods ${money(L.goodsUSD)} · setup ${money(L.setupUSD)} · freight ${money(L.freightUSD)}${share ? ` (${share}% of the landed total)` : ''}</p>`;
+  }
+
+  function render() {
+    const d = state.data, q = d.request || {};
+    const cands = (d.candidates || []).slice().sort((a, b) => ((a.landed || {}).perUnitUSD || 9e9) - ((b.landed || {}).perUnitUSD || 9e9));
+    state.cands = cands;
+    const unit = plural(q.query || 'item', 1);
+    const t = d.timingSec || {};
+    const n = cands.length;
+    const maxTotal = Math.max(...cands.map(c => (c.landed || {}).totalUSD || ((c.goodsUSD || 0) + (c.setupUSD || 0))), 1);
+    const next = cands[1];
+
+    const rowsHtml = cands.map((c, i) => {
+      const L = c.landed;
+      const supplierLink = c.supplierUrl ? `<a href="${esc(c.supplierUrl)}" target="_blank" rel="noopener">${esc(c.supplier)}</a>` : esc(c.supplier);
+      const includes = c.priceIncludes ? esc(c.priceIncludes.replace(/;\s*/g, ', ')) : `not stated by SAGE. <a href="${esc(c.supplierUrl || '#')}" target="_blank" rel="noopener">Confirm with ${esc(c.supplier)}</a>${c.supplierPhone ? ', ' + esc(c.supplierPhone) : ''}`;
+      return `<li class="row" data-id="${esc(c.id)}">
+        <div>
+          <div class="photo" data-i="${i}">${c.images && c.images.length ? `<img src="${esc(c.images[0])}" alt="${esc(c.name)}, supplier photo 1"${i > 3 ? ' loading="lazy"' : ''}>` : `<p class="muted">${esc(c.name)}</p>`}</div>
+          ${c.images && c.images.length > 1 ? `<div class="thumbs" role="group" aria-label="Photos of ${esc(c.name)}">${c.images.slice(0, 6).map((u, k) => `<button type="button" data-i="${i}" data-k="${k}" aria-pressed="${k === 0}" aria-label="Photo ${k + 1}"><img src="${esc(u)}" alt="" loading="lazy"></button>`).join('')}</div>` : ''}
+        </div>
+        <div>
+          <p class="rank">Option ${i + 1} of ${n}</p>
+          <h3 class="name">${esc(c.name)}</h3>
+          <p class="sup">${supplierLink} · Item ${esc(c.itemNum)}${c.supplierPhone ? ' · ' + esc(c.supplierPhone) : ''}</p>
+          <p class="cost v2"><b>${money(c.netAtQty)}</b> your cost each at ${esc(c.breakUsed)}<span class="sep">|</span>catalog ${money(c.catalogAtQty)}<span class="sep">|</span>setup <b>${money(c.setupChg)}</b></p>
+          <div class="block"><h4>Freight to ${esc(q.shipToLabel || q.shipTo)}, retail, cheapest three</h4>${freightList(c, unit)}</div>
+          <div class="block"><dl class="facts">
+            <div><dt>Price includes</dt><dd>${includes}</dd></div>
+            <div><dt>Decoration</dt><dd>${esc(c.decorationMethod || 'not shown')}${c.imprintArea ? `<small>${esc(c.imprintArea)}</small>` : ''}</dd></div>
+            <div><dt>Colours</dt><dd>${esc(c.colors || 'not shown')}</dd></div>
+            <div><dt>Production</dt><dd>${esc(c.prodTime || 'not shown')}</dd></div>
+            <div><dt>Ships from</dt><dd>${esc(c.shipFromZip)}${c.madeIn ? `, made in ${esc(c.madeIn)}` : ''}</dd></div>
+            <div><dt>Carton</dt><dd>${c.carton && c.carton.units ? `${c.carton.units} per carton, ${c.carton.lbs} lb, ${c.carton.L}×${c.carton.W}×${c.carton.H} in` : '<span class="flag">not shown by the supplier</span>'}</dd></div>
+          </dl></div>
+          <div class="block"><h4>Price breaks, your cost each</h4>${breaksTable(c)}</div>
+          <div class="block"><h4>Where the money goes</h4>${moneyBar(c, maxTotal)}</div>
+        </div>
+        <div class="side">
+          <p class="per v2">${L ? money(L.perUnitUSD) : 'Not rated'}<small>per ${esc(unit)}, landed</small></p>
+          <p class="tot v2">${L ? `${money(L.totalUSD)} for ${esc(q.qty)}, arriving ${esc(arrive(c))}` : esc((c.freight.problems || []).join(' '))}</p>
+          ${i === 0 && L ? `<p class="best">Lowest landed cost${next && next.landed ? `, ${money(next.landed.perUnitUSD - L.perUnitUSD)} under the next` : ''}</p>` : ''}
+          <button class="btn primary select-btn" type="button" data-select="${esc(c.id)}" aria-pressed="false">Select this ${esc(unit)}</button>
+        </div>
+      </li>`;
+    }).join('');
+
+    $('#main').innerHTML = `
+      <section class="request" data-region="request" data-ref="https://mobbin.com/screens/76f16c95-05bd-4965-b5f9-3c55a5848dad" data-took="adidas search results: a small 'search for' line, the words searched in quotation marks as the big heading, and the result count beside it" aria-label="Request">
+        <p class="k">She asked for</p>
+        <h1>${q.prompt ? `“${esc(q.prompt)}”` : `${esc(q.qty)} ${esc(plural(q.query, q.qty))} to ${esc(q.shipToLabel || q.shipTo)}`}</h1>
+        <div class="facts"><span><b>${esc(q.qty)} ${esc(plural(q.query, q.qty))}</b></span><span>to <b>${esc(q.shipToLabel ? q.shipToLabel + ' ' : '')}${esc(q.shipTo || '')}</b></span>${q.minPrice != null || q.maxPrice != null ? `<span>net <b>${q.minPrice != null ? money(q.minPrice) : 'any'} to ${q.maxPrice != null ? money(q.maxPrice) : 'any'}</b></span>` : ''}<span><b>${n}</b> of ${esc(d.totalFound || n)} matches, cheapest landed first</span><span>${esc(whenText(d.generated))}${d.queriesSpent ? ` · ${d.queriesSpent} SAGE queries` : ''}${t.total ? ` · ${t.total} s` : ''}</span></div>
+      </section>
+      <section data-region="option-rows" data-ref="https://mobbin.com/screens/1baaa795-1eb9-4596-9847-efaf5ba1a9e6" data-took="GetYourGuide results list: one row per option with the photo on the left, the name and details in the middle, and the price on the right with a thin rule between rows; the product photo on a light gray frame and the black uppercase button are lululemon's https://mobbin.com/screens/764af7f5-67bf-4b76-92f6-9a85e654efbe" aria-label="Options">
+        <ul class="rows">${rowsHtml}</ul>
+      </section>
+      <div class="cols" data-region="layout" data-ref="https://mobbin.com/screens/47a75aa6-fd83-4f88-b475-cde65f3384de" data-took="Urban Outfitters checkout: the shipping choice and details in a wide left column and the order summary in a narrower right column that stays in view; on the phone the summary follows the content">
+        <div>
+          <section class="ship" id="ship" data-region="shipping-options" data-ref="https://mobbin.com/screens/efd7feb8-458f-4bda-89e9-7834bb76729f" data-took="PayPal Shipping Rates: a heading, one sentence, then one bordered card per carrier service with the service name, the delivery line under it and the price on the right; the chosen card is tinted with a strong border. The step heading with a check when done is Uvodo's checkout https://mobbin.com/screens/6321f77a-c31a-44ac-991e-5ec24e589875" aria-label="Shipping options"></section>
+          <section class="form" id="form" data-region="quote-details" data-ref="https://mobbin.com/screens/6ee844eb-9b49-4f98-8c59-f8a27f7a6c9f" data-took="lululemon checkout: short labels above full-width inputs, two fields to a row, address lines beneath, with a note under a field when it needs one; the step heading is Uvodo's checkout https://mobbin.com/screens/6321f77a-c31a-44ac-991e-5ec24e589875" aria-label="Quote details"></section>
+          <section class="docs" id="docs" data-region="quotes-list" data-ref="https://mobbin.com/screens/e74f522b-aab3-40de-bb2f-0b6cd895f2b9" data-took="Gusto Documents: a heading and a plain table of documents with the name and date on the left and the actions on the right of each row" aria-label="Quotes built"></section>
+        </div>
+        <div class="aside-wrap">
+          <aside class="summary" id="summary" data-region="quote-summary" data-ref="https://mobbin.com/screens/47a75aa6-fd83-4f88-b475-cde65f3384de" data-took="Urban Outfitters Order Summary: a bordered card on the right with subtotal, shipping, tax and a bold total, and one full-width button to go on" aria-label="Quote summary"></aside>
+        </div>
+      </div>`;
+    renderShip(); renderForm(); renderSummary(); renderDocs();
+
+    $('#main').onclick = e => {
+      const b = e.target.closest('.thumbs button');
+      if (b) { const c = cands[Number(b.dataset.i)], k = Number(b.dataset.k); const img = $(`.photo[data-i="${b.dataset.i}"] img`); if (img) { img.src = c.images[k]; img.alt = `${c.name}, supplier photo ${k + 1}`; } b.parentElement.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(x === b))); return; }
+      const s = e.target.closest('[data-select]');
+      if (s) { state.sel = s.dataset.select; const c = cands.find(x => x.id === state.sel); const basis = (c.freight.options || []).findIndex(o => (o.carrier + ' ' + o.service) === (c.landed || {}).basis); state.opt = basis >= 0 ? basis : 0; refreshSelection(); $('#ship').scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+    };
+  }
+
+  function refreshSelection() {
+    const unit = plural(state.data.request.query || 'item', 1);
+    document.querySelectorAll('[data-select]').forEach(b => { const on = b.dataset.select === state.sel; b.setAttribute('aria-pressed', String(on)); b.textContent = on ? 'Selected' : 'Select this ' + unit; b.classList.toggle('primary', !on); });
+    document.querySelectorAll('.row').forEach(r => r.classList.toggle('sel', r.dataset.id === state.sel));
+    renderShip(); renderSummary();
+  }
+
+  function selected() { return state.cands.find(c => c.id === state.sel) || null; }
+  function option() { const c = selected(); return c && c.freight.options ? c.freight.options[state.opt] || null : null; }
+
+  function renderShip() {
+    const c = selected(), unit = plural(state.data.request.query || 'item', 1);
+    if (!c) { $('#ship').innerHTML = `${stepHead('Shipping method', false)}<p>Select a ${esc(unit)} above to see every carrier option for it.</p>`; return; }
+    const opts = c.freight.options || [];
+    const el = c.freight.eligibility || {};
+    $('#ship').innerHTML = `${stepHead('Shipping method', state.opt != null)}<p>Retail rates for ${c.cartons} cartons of the ${esc(c.name)} from ${esc(c.shipFromZip)} to ${esc(state.data.request.shipToLabel || state.data.request.shipTo)}${el.lengthPlusGirthIn ? `, ${esc(c.carton.lbs)} lb and ${esc(el.lengthPlusGirthIn)} in length plus girth each` : ''}. The supplier ships on its own account and will quote lower; this is the ceiling.${(el.notes || []).length ? ' ' + esc(el.notes.join('. ')) + '.' : ''}</p>
+      <ul class="rates" role="radiogroup" aria-label="Shipping options">${opts.map((o, i) => `<li><label class="rate${i === state.opt ? ' on' : ''}"><input type="radio" name="opt" value="${i}" ${i === state.opt ? 'checked' : ''}><span class="t">${esc(svcName(o))}</span><span class="p v2">${money(o.totalUSD)}</span><span class="d">${esc(short(o.delivery))}${o.transitDays ? ` · ${o.transitDays} days in transit` : ''}${o.note && /^repack/.test(o.note) ? ' · needs repacking into USPS boxes' : ''}${o.note && /^billed/.test(o.note) ? ' · ' + esc(o.note) : ''}${o.onlineTotalUSD ? ` · ${money(o.onlineTotalUSD)} paid online` : ''}</span><span class="s">${srcLink(o, c)}</span></label></li>`).join('')}</ul>`;
+    $('#ship').querySelectorAll('input[name=opt]').forEach(r => r.addEventListener('change', () => { state.opt = Number(r.value); $('#ship').querySelectorAll('.rate').forEach((l, i) => l.classList.toggle('on', i === state.opt)); renderSummary(); }));
+  }
+
+  function renderForm() {
+    const f = state.form;
+    const fields = [['customer', 'Customer contact', 'text', true], ['phone', 'Phone', 'tel', false], ['company', 'Company', 'text', false], ['address1', 'Address', 'text', false], ['address2', 'City, state and ZIP', 'text', false], ['turnaround', 'Turnaround', 'text', false], ['unitCost', 'Sell price per unit', 'number', true], ['inquiry', 'Their inquiry, in a few words', 'text', false]];
+    $('#form').innerHTML = `${stepHead('Quote details', false)}<p>What goes on the quote sheet. The product numbers come from your selection; the sell price is yours.</p>
+      <div class="grid2">${fields.map(([k, label, type, req]) => `<div class="field"><label for="f-${k}">${label}</label><input id="f-${k}" name="${k}" type="${type}" ${type === 'number' ? 'min="0.01" step="0.01" inputmode="decimal"' : ''} ${req ? 'required' : ''} value="${esc(f[k] || '')}" autocomplete="off">${k === 'unitCost' ? '<small id="f-unitCost-hint"></small>' : ''}</div>`).join('')}</div>`;
+    $('#form').querySelectorAll('input').forEach(i => i.addEventListener('input', () => { state.form[i.name] = i.value; renderSummary(); }));
+  }
+
+  function numbers() {
+    const c = selected(), o = option(), q = state.data.request;
+    if (!c) return null;
+    const sell = parseFloat(state.form.unitCost);
+    const product = isNaN(sell) ? null : sell * q.qty;
+    const setup = c.setupChg || 0, ship = o ? o.totalUSD : 0;
+    const subtotal = product == null ? null : product + setup + ship;
+    const tax = subtotal == null ? null : subtotal * GE;
+    const total = subtotal == null ? null : subtotal + tax;
+    return { c, o, sell, product, setup, ship, subtotal, tax, total, each: total == null ? null : total / q.qty };
+  }
+
+  function renderSummary() {
+    const q = state.data.request, unit = plural(q.query || 'item', 1), N = numbers();
+    const hint = $('#f-unitCost-hint'); if (hint) hint.textContent = N ? `Your cost is ${money(N.c.netAtQty)} per ${unit}. No markup rule is recorded, so the sell price is yours.` : '';
+    const formHead = $('#form .step .n'); if (formHead) formHead.classList.toggle('done', !!(N && N.total != null && state.form.customer));
+    if (!N) { $('#summary').innerHTML = `<h2>Quote summary</h2><p class="pick">Select a ${esc(unit)}, then a shipping method, to see the quote totals here.</p><button class="btn primary wide" type="button" disabled>Build quote</button>`; $('#stickybar').hidden = true; return; }
+    const { c, o } = N;
+    $('#summary').innerHTML = `<h2>Quote summary</h2>
+      <div class="pick"><b>${esc(c.name)}</b><span>${esc(q.qty)} from ${esc(c.supplier)}</span><span>${o ? esc(svcName(o)) + ', ' + esc(short(o.delivery)) : 'no shipping method yet'}</span></div>
+      <div class="lines v2">
+        <div><span>Product, ${esc(q.qty)} × ${N.sell ? money(N.sell) : '—'}</span><span>${N.product == null ? '—' : money(N.product)}</span></div>
+        <div><span>Setup</span><span>${money(N.setup)}</span></div>
+        <div><span>Shipping, retail estimate</span><span>${money(N.ship)}</span></div>
+        <div><span>Hawaii GE tax 4.712%</span><span>${N.tax == null ? '—' : money(N.tax)}</span></div>
+        <div class="tot"><span>Total</span><span>${N.total == null ? '—' : money(N.total)}</span></div>
+        <div><span>Per ${esc(unit)}</span><span>${N.each == null ? '—' : money(N.each)}</span></div>
+      </div>
+      <button class="btn primary wide" id="build" type="button" ${N.total == null || !o ? 'disabled' : ''}>Build quote</button>
+      <p class="result" id="build-status" aria-live="polite"></p>`;
+    $('#build').addEventListener('click', buildQuote);
+    const sb = $('#stickybar'); sb.hidden = false; $('#sb-k').textContent = `${c.name.slice(0, 28)} · ${o ? o.carrier : ''}`; $('#sb-v').textContent = N.total == null ? 'Enter a sell price' : money(N.total) + ' total'; $('#sb-go').disabled = N.total == null || !o;
+  }
+
+  async function buildQuote() {
+    const N = numbers(); if (!N || N.total == null) return;
+    const st = $('#build-status');
+    if (STATIC) { st.textContent = 'This is a saved copy. Tell Claude which product, which shipping option and your sell price, and it builds the quote.'; return; }
+    st.textContent = 'Building the sheet…';
+    const body = { run: state.file, candidateId: state.sel, optionIndex: state.opt, ...state.form };
+    try {
+      const r = await fetch('/api/quote', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      const j = await r.json();
+      if (!r.ok || !j.ok) { st.textContent = 'Not built: ' + (j.error || r.status); return; }
+      st.innerHTML = `Built. <a href="${quoteHref(j.file)}">Download ${esc(j.file)}</a><br><span class="muted">${esc(j.path)}</span>`;
+      renderDocs();
+    } catch (e) { st.textContent = 'Not built: ' + e.message; }
+  }
+
+  async function renderDocs() {
+    const el = $('#docs'); if (!el) return;
+    if (STATIC) { el.innerHTML = '<h2>Quotes built</h2><p class="none">Quotes from a saved copy are built in chat and saved under External/Quotes.</p>'; return; }
+    const r = await fetch('/api/quotes'); state.quotes = r.ok ? await r.json() : [];
+    el.innerHTML = `<h2>Quotes built</h2>` + (state.quotes.length ? `<table><thead><tr><th>Name</th><th>Built</th><th></th></tr></thead><tbody>${state.quotes.map(x => `<tr><td>${esc(x.file)}</td><td class="muted">${esc(whenText(x.modified))}</td><td class="act"><a href="${quoteHref(x.file)}">Download</a><button class="link-btn" type="button" data-del="${esc(x.file)}">Delete</button></td></tr>`).join('')}</tbody></table>` : '<p class="none">None yet. The first one you build appears here with a download link.</p>');
+    el.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', () => askDelete(b.dataset.del)));
+  }
+
+  let pendingDelete = null;
+  function askDelete(file) { pendingDelete = file; $('#del-text').textContent = `${file} will be moved to the quotes trash folder and will not show here again.`; $('#confirm-delete').showModal(); }
+  $('#del-cancel').addEventListener('click', () => { pendingDelete = null; $('#confirm-delete').close(); });
+  $('#confirm-delete').addEventListener('close', () => { pendingDelete = null; });
+  $('#del-go').addEventListener('click', async () => {
+    const file = pendingDelete; if (!file) return;
+    const r = await fetch('/api/quote/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ file, confirm: true }) });
+    $('#confirm-delete').close();
+    if (!r.ok) { $('#docs').insertAdjacentHTML('beforeend', '<p class="flag">Not deleted.</p>'); }
+    renderDocs();
+  });
+
+  const hist = $('#history');
+  function openHistory() { hist.hidden = false; hist.classList.add('open'); $('#close-history').focus(); }
+  function closeHistory() { hist.classList.remove('open'); hist.hidden = true; $('#open-history').focus(); }
+  $('#open-history').addEventListener('click', openHistory);
+  $('#close-history').addEventListener('click', closeHistory);
+  $('#history-scrim').addEventListener('click', closeHistory);
+  $('#runs').addEventListener('click', e => { const b = e.target.closest('button[data-file]'); if (!b) return; state.pinned = b.dataset.file; closeHistory(); show(state.pinned); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && hist.classList.contains('open')) closeHistory(); });
+
+  $('#sb-go').addEventListener('click', () => { const b = $('#build'); if (b) { b.scrollIntoView({ behavior: 'smooth', block: 'center' }); b.focus(); } });
+
+  function arrive(c) { const L = c.landed; if (!L) return ''; const o = (c.freight.options || []).find(x => (x.carrier + ' ' + x.service) === L.basis); return o ? short(o.delivery) : ''; }
+  function svcName(o) { const svc = o.service.replace(/^USPS /, ''); return svc.startsWith(o.carrier) ? svc : o.carrier + ' ' + svc; }
+  function short(s) { return String(s || '').replace(/^By End of Day\s+/i, '').replace(/,?\s*20\d\d/, '').trim(); }
+
+  async function tick() { try { await loadRuns(); await show(state.pinned); } catch (e) { /* server away */ } }
+  tick(); if (!STATIC) setInterval(tick, 3000);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+# Keys and passwords never leave this computer
+secrets/*
+!secrets/keys.example.xlsx
+
+# This computer's own settings (memory location, permissions you approved)
+.claude/settings.local.json
+
+# Installed or temporary files
+__pycache__/
+*.pyc
+node_modules/
+.tmp/

@@ -1,0 +1,73 @@
+---
+name: setup
+description: First-run setup. Checks this computer and installs what is missing, interviews her one question at a time to fill in Brain/Context and her work files, sets the quote header, and finishes with a test quote and a first focus list. Starts on its own in the first session; also use when she says "set up", "start over", or "check my computer".
+---
+
+# Setup
+
+A conversation, not a form. One question per message, always.
+
+## Part 1: check this computer (about 2 minutes)
+
+1. Say in one short paragraph what is about to happen: a quick computer check, then about
+   twenty minutes of questions she can answer by voice, then a test quote.
+2. Run `python .claude/tools/env_check.py --fix`. If `python` is not found, try `py`, then
+   `python3`. If none works, say Python is needed, give https://www.python.org/downloads/ and ask
+   her to tick "Add python.exe to PATH" when installing, then run it again.
+3. Read the result back in plain words, one line per row: what works today and what does not and
+   why. Never paste the raw output. If memory was just switched on, say it starts next session.
+   Then go straight on to Part 2. Do not ask whether to continue, and do not stop to fix
+   something that does not work yet; note it and move on.
+
+## Part 2: the interview (about 20 minutes)
+
+4. Read `Brain/Context/me.md`, `work.md`, `team.md` and every `.md` file in
+   `internal/Domains/Work/ASB/`. Note every "(confirm)" line and every blank under
+   "Still to fill in".
+5. Go topic by topic, in this order. For each: read back what is seeded and ask "is that right?",
+   then ask for the blanks, one question at a time.
+   1. Me (`Brain/Context/me.md`): contact details, where she works from, how she wants Claude to
+      talk to her, anything Claude must never do.
+   2. Work and team (`Brain/Context/work.md`, `team.md`): what sells most, team names and roles.
+   3. Suppliers and pricing (`internal/Domains/Work/ASB/suppliers-and-pricing.md`): main
+      suppliers, how each agreement works, markup rules by supplier and by customer, freight
+      forwarder. Write "unknown" for anything she cannot state. Never fill a markup from a guess.
+   4. Customers (`customers.md`): top customers, locations, terms, tiers, programs.
+   5. Workflows (`workflows.md`): xlsx or PDF to customers, what the order-entry assistant needs.
+   6. Current focus (`current-focus.md`): this week, what keeps falling through.
+6. After each topic, rewrite that file: remove "(confirm)" from what she verified, correct what she
+   changed, fill what she answered, leave "unknown" where she did not know. Keep the headings.
+   Tell her the file name in one line.
+7. Quote header: ask for the exact top line of her quote sheet (company, phone, email), her name
+   as it appears under FROM, the company line, the city line and the website. Write them to
+   `internal/Domains/Work/ASB/quote-header.json` (keys `header_line`, `from_name`,
+   `from_company`, `from_city`, `from_web`).
+8. Email exports: ask "When you want me to turn emails into quotes, are you allowed to hand me a
+   saved email or an export, or should we only work from what Copilot summarizes?" Write her
+   answer in place of the "Email exports" line in `.claude/rules/boundaries.md`.
+9. Keys (optional; skip if she wants): SAGE product search and Pipedrive need her own details.
+   Ask her to open `secrets/keys.example.xlsx`, save a copy in the same folder as `keys.xlsx`, and
+   paste the values there herself. Never in chat. SAGE: account number, login and API key from
+   sagemember.com, Users tab. Pipedrive: her company name before `.pipedrive.com`, and the token
+   from Settings, Personal preferences, API. Then run `python .claude/tools/keys.py` and read
+   back which names are filled (never values).
+10. Never write anything from inside the firewall: no Outlook content, no M-Files data, no
+    company logins. If she offers one, decline in one sentence and move on.
+
+## Part 3: the test quote
+
+11. Say: "Now a test, using your keyring quote." Run:
+
+        python .agents/skills/quote/tools/build_quote.py --customer "Pat Sample" --company "Sample Contracting" --address "100 Sample St." --address "Hilo, HI 96720" --phone "(808) 555-0100" --item "Pull Apart Keyring" --qty 150 --unit-cost 3.95 --setup "Setup, laser engrave=80" --shipping 143 --destination Hilo --url https://us.stregisgrp.com/channel/home-office/detail/KC110 --turnaround "10-12 business days" --date 2026-10-25
+
+12. The summary must read subtotal $815.50, tax $38.43, total $853.93, $5.69 each. Give her the
+    full file path and ask her to open it beside her original sheet.
+
+## Part 4: the first focus list
+
+13. Ask "What should you focus on this week?" Offer the Copilot route: give her prompt 9
+    ("Today's five") or prompt 1 ("Inbox triage") from
+    `.agents/skills/copilot-inside/prompts.md` as one block to copy, and ask her to paste
+    Copilot's answer back. Then run `/daily-focus` on it plus anything she says.
+14. Close with the skills table from the root `CLAUDE.md` in five lines or fewer, and ask which
+    real job she wants to do first.
