@@ -31,7 +31,8 @@ workbook cell by cell, so it opens in Excel looking exactly like hers, formulas 
 ## What the tool guarantees
 
 - Her template's fonts, borders, column widths, merged cells and logo are untouched; only values
-  change. The product URL becomes the link on the "Product Link" label, as on her own sheet. The header comes from `internal/Domains/Work/ASB/quote-header.json`.
+  change. Text too long for its box wraps and its row grows, so nothing is cut off; if that makes
+  the sheet taller than a page, it prints scaled to one page. The product URL becomes the link on the "Product Link" label, as on her own sheet. The header comes from `internal/Domains/Work/ASB/quote-header.json`.
 - GE tax is 4.712 percent of the subtotal (product plus setup plus shipping). Per-each is total
   divided by quantity. Formulas are written in, so she can change a number in Excel.
 - Terms default to Net 30; validity reads 30 days.

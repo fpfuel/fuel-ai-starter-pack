@@ -26,6 +26,7 @@ import datetime as dt
 import json
 import re
 import sys
+import unicodedata
 import zipfile
 from pathlib import Path
 from xml.sax.saxutils import escape
@@ -37,6 +38,7 @@ QUOTES = PACK_ROOT / "External" / "Quotes"
 
 SHEET = "xl/worksheets/sheet1.xml"
 WORKBOOK = "xl/workbook.xml"
+STYLES = "xl/styles.xml"
 GE_TAX_RATE = 0.04712
 
 # Every cell the quote writes. All are cleared first, so a new quote never carries the last
@@ -87,11 +89,13 @@ class Sheet:
 
     def __init__(self, xml):
         self.xml = xml
+        self.texts = {}  # ref -> text written, for fit_text
 
     def _find(self, ref):
         return re.search(r'<c r="' + ref + r'"(?P<a>[^>]*?)(?:/>|>(?P<b>.*?)</c>)', self.xml, re.S)
 
     def set(self, ref, value, cached=None):
+        self.texts.pop(ref, None)
         m = self._find(ref)
         style = re.search(r'\bs="(\d+)"', m.group("a")).group(1) if m and 's="' in m.group("a") else None
         s = f' s="{style}"' if style else ""
@@ -107,6 +111,7 @@ class Sheet:
         else:
             new = (f'<c r="{ref}"{s} t="inlineStr"><is><t xml:space="preserve">'
                    f'{escape(str(value))}</t></is></c>')
+            self.texts[ref] = str(value)
         if m:
             self.xml = self.xml[:m.start()] + new + self.xml[m.end():]
             return
@@ -121,6 +126,217 @@ class Sheet:
                 at = c.start()
                 break
         self.xml = self.xml[:rm.start(1)] + body[:at] + new + body[at:] + self.xml[rm.end(1):]
+
+    def style_of(self, ref):
+        m = self._find(ref)
+        st = re.search(r'\bs="(\d+)"', m.group("a")) if m else None
+        return int(st.group(1)) if st else 0
+
+    def restyle(self, ref, style):
+        m = self._find(ref)
+        attrs = re.sub(r'\s*\bs="\d+"', "", m.group("a"))
+        start = m.start() + len(f'<c r="{ref}"')
+        self.xml = (self.xml[:m.start()] + f'<c r="{ref}" s="{style}"{attrs}'
+                    + self.xml[start + len(m.group("a")):])
+
+    def set_row_height(self, row, points):
+        m = re.search(r'<row r="' + str(row) + r'"([^>]*?)(/?)>', self.xml)
+        attrs = re.sub(r'\s*\b(?:ht|customHeight)="[^"]*"', "", m.group(1))
+        self.xml = (self.xml[:m.start()] + f'<row r="{row}"{attrs} ht="{points:g}" customHeight="1"'
+                    + m.group(2) + ">" + self.xml[m.end():])
+
+
+# Arial advance widths (the same as Helvetica) in 1/1000 em, for ASCII 32 to 126.
+_ARIAL = ([278, 278, 355, 556, 556, 889, 667, 191, 333, 333, 389, 584, 278, 333, 278, 278]
+          + [556] * 10 + [278, 278, 584, 584, 584, 556, 1015]
+          + [667, 667, 722, 722, 667, 611, 778, 722, 278, 500, 667, 556, 833,
+             722, 778, 667, 778, 722, 667, 611, 722, 667, 944, 667, 667, 611]
+          + [278, 278, 278, 469, 556, 333]
+          + [556, 556, 500, 556, 556, 278, 556, 556, 222, 222, 500, 222, 833,
+             556, 556, 556, 556, 333, 500, 278, 556, 500, 722, 500, 500, 500]
+          + [334, 260, 334, 584])
+# Measured in Excel on this template: a column-width unit draws as 5 points and an indent level
+# as 8. text_width never comes out narrower than what Excel's AutoFit asks for.
+PT_PER_WIDTH_UNIT = 5.0
+INDENT_PT = 8.0
+
+
+def text_width(text, size, bold):
+    em = 0
+    for ch in text:
+        o = ord(ch)
+        if 32 <= o < 127:
+            em += _ARIAL[o - 32]
+        else:
+            em += 1000 if unicodedata.east_asian_width(ch) in "WF" else 667
+    return em / 1000 * size * 1.05 * (1.05 if bold else 1) + 4
+
+
+def wrap_lines(text, room, size, bold):
+    """The lines Excel needs to show text in `room` points, breaking at spaces."""
+    lines = []
+    for para in str(text).split("\n"):
+        line = ""
+        for word in para.split(" "):
+            trial = f"{line} {word}" if line else word
+            if text_width(trial, size, bold) <= room:
+                line = trial
+                continue
+            if line:
+                lines.append(line)
+            line = ""
+            for ch in word:  # a word wider than the cell breaks mid-word
+                if line and text_width(line + ch, size, bold) > room:
+                    lines.append(line)
+                    line = ""
+                line += ch
+        lines.append(line)
+    return lines
+
+
+class Styles:
+    """Reads fonts and cell formats from styles.xml and adds wrapping copies of formats."""
+
+    def __init__(self, xml):
+        self.xml = xml
+        fonts = re.search(r"<fonts\b[^>]*>(.*?)</fonts>", xml, re.S).group(1)
+        self.fonts = re.findall(r"<font\b[^>]*?/>|<font\b[^>]*>.*?</font>", fonts, re.S)
+        block = re.search(r"<cellXfs\b[^>]*>(.*?)</cellXfs>", xml, re.S).group(1)
+        self.xfs = re.findall(r"<xf\b[^>]*?/>|<xf\b[^>]*?>.*?</xf>", block, re.S)
+        self.wrapped = {}
+
+    def font(self, style):
+        fid = re.search(r'fontId="(\d+)"', self.xfs[style])
+        f = self.fonts[int(fid.group(1)) if fid else 0]
+        sz = re.search(r'<sz val="([\d.]+)"', f)
+        bold = re.search(r'<b(?: val="(?:1|true)")?/>', f) is not None
+        return (float(sz.group(1)) if sz else 11.0), bold
+
+    def alignment(self, style):
+        m = re.search(r"<alignment\b[^>]*/>", self.xfs[style])
+        a = m.group(0) if m else ""
+        indent = re.search(r'indent="(\d+)"', a)
+        return {"indent": int(indent.group(1)) if indent else 0,
+                "shrink": 'shrinkToFit="1"' in a, "wrap": 'wrapText="1"' in a}
+
+    def wrap(self, style):
+        """Index of a format identical to `style` except that its text wraps."""
+        if style in self.wrapped:
+            return self.wrapped[style]
+        xf = self.xfs[style]
+        if "<alignment" in xf:
+            xf = re.sub(r"<alignment\b([^>]*?)/>",
+                        lambda m: "<alignment" + re.sub(r'\s*\b(?:wrapText|shrinkToFit)="[^"]*"', "",
+                                                        m.group(1)) + ' wrapText="1"/>', xf)
+        elif xf.endswith("/>"):
+            xf = xf[:-2] + '><alignment wrapText="1"/></xf>'
+        else:
+            xf = re.sub(r"^(<xf\b[^>]*>)", r'\1<alignment wrapText="1"/>', xf)
+        head, rest = xf.split(">", 1)
+        if "applyAlignment" not in head:
+            xf = head.replace("<xf ", '<xf applyAlignment="1" ', 1) + ">" + rest
+        self.xfs.append(xf)
+        self.xml = re.sub(r"(<cellXfs\b[^>]*>).*?(</cellXfs>)",
+                          lambda m: re.sub(r'count="\d+"', f'count="{len(self.xfs)}"', m.group(1))
+                          + "".join(self.xfs) + m.group(2), self.xml, count=1, flags=re.S)
+        self.wrapped[style] = len(self.xfs) - 1
+        return self.wrapped[style]
+
+
+def _cell(ref):
+    m = re.match(r"([A-Z]+)(\d+)$", ref)
+    return _col(m.group(1)), int(m.group(2))
+
+
+def fit_text(sh, styles):
+    """Make every written text fully visible: text wider than its cell (or merged cell) wraps,
+    and its row grows to show every line. Columns, merges and fonts stay as they are."""
+    fmt = re.search(r"<sheetFormatPr\b[^>]*>", sh.xml)
+    fmt = fmt.group(0) if fmt else ""
+    dw = re.search(r'defaultColWidth="([\d.]+)"', fmt)
+    dh = re.search(r'defaultRowHeight="([\d.]+)"', fmt)
+    default_w = float(dw.group(1)) if dw else 8.43
+    default_h = float(dh.group(1)) if dh else 15.0
+    widths = {}
+    for c in re.finditer(r'<col min="(\d+)" max="(\d+)"[^>]*?width="([\d.]+)"', sh.xml):
+        for i in range(int(c.group(1)), int(c.group(2)) + 1):
+            widths[i] = float(c.group(3))
+    heights = {int(r.group(1)): float(r.group(2))
+               for r in re.finditer(r'<row r="(\d+)"[^>]*?\bht="([\d.]+)"', sh.xml)}
+    merges = []
+    for m in re.finditer(r'<mergeCell ref="([A-Z]+\d+):([A-Z]+\d+)"', sh.xml):
+        (c1, r1), (c2, r2) = _cell(m.group(1)), _cell(m.group(2))
+        merges.append((c1, r1, c2, r2))
+
+    def area(ref):
+        c, r = _cell(ref)
+        for c1, r1, c2, r2 in merges:
+            if c1 <= c <= c2 and r1 <= r <= r2:
+                return c1, r1, c2, r2
+        return c, r, c, r
+
+    need = []  # (first row, last row, points)
+    for ref, text in sh.texts.items():
+        style = sh.style_of(ref)
+        al = styles.alignment(style)
+        if al["shrink"]:
+            continue  # her format shrinks this one to fit
+        size, bold = styles.font(style)
+        c1, r1, c2, r2 = area(ref)
+        room = sum(widths.get(i, default_w) for i in range(c1, c2 + 1)) * PT_PER_WIDTH_UNIT
+        lines = wrap_lines(text, room - al["indent"] * INDENT_PT, size, bold)
+        if len(lines) < 2:
+            continue
+        if not al["wrap"]:
+            sh.restyle(ref, styles.wrap(style))
+        per_line = {10.0: 12.5, 11.0: 14.0}.get(size, size * 1.3)
+        need.append((r1, r2, len(lines) * per_line + 1.5))
+
+    grow = {}
+    for r1, r2, pts in sorted(need, key=lambda n: n[1] - n[0]):
+        have = sum(grow.get(r, heights.get(r, default_h)) for r in range(r1, r2 + 1))
+        if pts > have:
+            grow[r2] = grow.get(r2, heights.get(r2, default_h)) + pts - have
+    for row, pts in grow.items():
+        sh.set_row_height(row, -(-pts * 2 // 1) / 2)
+
+
+PAPER_HEIGHT_IN = {"1": 11.0, "5": 14.0, "9": 11.69}  # letter, legal, A4
+
+
+def keep_on_one_page(sh, wb_xml):
+    """If grown rows would push the print area onto a second page, print it scaled to one page."""
+    area = re.search(r'_xlnm\.Print_Area"[^>]*>[^<]*?\$?[A-Z]+\$?(\d+):\$?[A-Z]+\$?(\d+)<', wb_xml)
+    if not area:
+        return
+    fmt = re.search(r'<sheetFormatPr\b[^>]*?defaultRowHeight="([\d.]+)"', sh.xml)
+    default_h = float(fmt.group(1)) if fmt else 15.0
+    heights = {int(r.group(1)): float(r.group(2))
+               for r in re.finditer(r'<row r="(\d+)"[^>]*?\bht="([\d.]+)"', sh.xml)}
+    tall = sum(heights.get(r, default_h) for r in range(int(area.group(1)), int(area.group(2)) + 1))
+    setup = re.search(r"<pageSetup\b[^>]*?/>", sh.xml)
+    margins = re.search(r'<pageMargins\b[^>]*?top="([\d.]+)"[^>]*?bottom="([\d.]+)"', sh.xml)
+    if not setup or not margins:
+        return
+    paper = re.search(r'paperSize="(\d+)"', setup.group(0))
+    page_in = PAPER_HEIGHT_IN.get(paper.group(1) if paper else "1", 11.0)
+    if 'orientation="landscape"' in setup.group(0):
+        return
+    room = (page_in - float(margins.group(1)) - float(margins.group(2))) * 72
+    if tall <= room * 0.97 or "fitToPage" in sh.xml:
+        return
+    fixed = re.sub(r'\s*\bfitTo(?:Width|Height)="\d+"', "", setup.group(0))
+    sh.xml = sh.xml.replace(setup.group(0), fixed[:-2] + ' fitToWidth="1" fitToHeight="1"/>', 1)
+    if "<pageSetUpPr" in sh.xml:
+        sh.xml = sh.xml.replace("<pageSetUpPr", '<pageSetUpPr fitToPage="1"', 1)
+    elif re.search(r"<sheetPr\b[^>]*/>", sh.xml):
+        sh.xml = re.sub(r"<sheetPr\b([^>]*?)/>", r'<sheetPr\1><pageSetUpPr fitToPage="1"/></sheetPr>',
+                        sh.xml, count=1)
+    elif "</sheetPr>" in sh.xml:
+        sh.xml = sh.xml.replace("</sheetPr>", '<pageSetUpPr fitToPage="1"/></sheetPr>', 1)
+    else:
+        sh.xml = re.sub(r"(<worksheet\b[^>]*>)", r'\1<sheetPr><pageSetUpPr fitToPage="1"/></sheetPr>',
+                        sh.xml, count=1)
 
 
 def parse_setup(items):
@@ -171,6 +387,7 @@ def build(a):
     zin = zipfile.ZipFile(template)
     sh = Sheet(zin.read(SHEET).decode("utf-8"))
     wb_xml = zin.read(WORKBOOK).decode("utf-8")
+    styles = Styles(zin.read(STYLES).decode("utf-8"))
 
     for ref in VARIABLE_CELLS:
         sh.set(ref, None)
@@ -228,6 +445,8 @@ def build(a):
         sh.set(ref, text)
     sh.set("C32", f"Turnaround time: {a.turnaround}" if a.turnaround else None)
     sh.set("F37", 30)
+    fit_text(sh, styles)
+    keep_on_one_page(sh, wb_xml)
 
     if "fullCalcOnLoad" not in wb_xml:
         if "<calcPr" in wb_xml:
@@ -253,6 +472,8 @@ def build(a):
                 data = rels_xml.encode("utf-8")
             elif name == WORKBOOK:
                 data = wb_xml.encode("utf-8")
+            elif name == STYLES:
+                data = styles.xml.encode("utf-8")
             elif name == "[Content_Types].xml":
                 data = re.sub(rb"<Override[^>]*calcChain[^>]*/>", b"", data)
             elif name == "xl/_rels/workbook.xml.rels":
@@ -272,6 +493,12 @@ def build(a):
     print(f"  GE tax 4.712%: ${tax:,.2f}")
     print(f"  Total: ${total:,.2f}  (${total / qty:,.2f} each)")
     print("  Prices good for 30 days.")
+    # Her UNIT COST column holds up to $999.99 and AMOUNT up to $999,999.99; past that Excel
+    # shows #### instead of the number.
+    amounts = [goods, subtotal, tax, total, shipping or 0] + [x for _, x in setups]
+    if round(unit, 2) >= 1000 or round(total / qty, 2) >= 1000 or max(round(x, 2) for x in amounts) >= 1e6:
+        print("  Note: a price here is too wide for its column on the sheet, so Excel shows ####."
+              " Widen that column in Excel before sending.")
     if not header:
         print("  Note: the header is blank. Run setup to add your name, company and contact line.")
     return result
