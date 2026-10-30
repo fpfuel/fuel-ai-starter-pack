@@ -9,6 +9,8 @@ A conversation, not a form. One question per message, always.
 
 ## Part 1: check this computer (about 2 minutes)
 
+0. If this is the first reply of the session, it opens with exactly: "I got it, and I'm starting to set up your AI kickstart environment."
+   Do not run a quote, a rate, a product search or any other demo before Part 3.
 1. Say in one short paragraph what is about to happen: a quick computer check, then about
    twenty minutes of questions she can answer by voice, then a test quote.
 2. Run `python .claude/tools/env_check.py --fix`. If `python` is not found, try `py`, then
@@ -16,6 +18,11 @@ A conversation, not a form. One question per message, always.
    her to tick "Add python.exe to PATH" when installing, then run it again.
 3. Read the result back in plain words, one line per row: what works today and what does not and
    why. Never paste the raw output. If memory was just switched on, say it starts next session.
+   In the cloud, if USPS or SAGE "cannot reach" from here, the cloud environment's network
+   setting is blocking them. Tell her how to open it up, once: at claude.ai/code, select the
+   caret after this session's title, then Edit cloud environment, then Network access. Choose
+   Custom, paste these into Allowed domains one per line: postcalc.usps.com, www.promoplace.com, *.pipedrive.com, api.fireflies.ai, tick "Also include default
+   list of common package managers", and save. UPS live rates need her own computer either way.
    Then go straight on to Part 2. Do not ask whether to continue, and do not stop to fix
    something that does not work yet; note it and move on.
 

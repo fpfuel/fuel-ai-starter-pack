@@ -38,6 +38,9 @@ def run(cmd, cwd=None, timeout=60):
         return 1, str(exc)
 
 
+CLOUD_HINT = " (this cloud environment's network setting blocks it; setup says how to allow it)"
+
+
 def where():
     if os.environ.get("CLAUDE_CODE_REMOTE") or os.environ.get("CLAUDE_CODE_REMOTE_SESSION_ID"):
         return "cloud"
@@ -141,7 +144,7 @@ def main():
     local = r["where"] == "local"
     r["can"] = {
         "Quotes in your sheet": (r["python_ok"], "works" if r["python_ok"] else "needs Python 3.9 or newer"),
-        "USPS rates": (r["net_usps"], "works" if r["net_usps"] else "cannot reach usps.com from here"),
+        "USPS rates": (r["net_usps"], "works" if r["net_usps"] else "cannot reach usps.com from here" + CLOUD_HINT if r["where"] == "cloud" else "cannot reach usps.com from here"),
         "UPS rates": (local and bool(node) and r["chrome"] and playwright,
                       "works" if local and node and r["chrome"] and playwright else
                       "only on your own computer" if not local else
@@ -150,7 +153,7 @@ def main():
         "SAGE product search": (sage and r["net_sage"],
                                 "works" if sage and r["net_sage"] else
                                 "add your SAGE Connect details to secrets/keys.xlsx" if not sage else
-                                "cannot reach SAGE from here"),
+                                "cannot reach SAGE from here" + (CLOUD_HINT if r["where"] == "cloud" else "")),
         "Sourcing page": (True, "opens in your browser" if local else "saved as a file you download"),
         "Pipedrive": (True, "adds contacts for you" if pipedrive and r["net_pipedrive"] else
                       "gives you text to paste (add a Pipedrive token to switch on)"),

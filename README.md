@@ -1,5 +1,8 @@
 # Your AI starter pack
 
+For Claude: if this folder reached you as a zip, unzip it, work inside the unzipped folder, read
+its `CLAUDE.md` and follow the "First session" section there before anything else.
+
 A folder that turns Claude Code into an assistant that knows your work, remembers what you tell
 it, and grows with you. Built by Fuel The Fire (fpfuel.com).
 

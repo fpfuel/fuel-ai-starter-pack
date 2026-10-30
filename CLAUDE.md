@@ -10,6 +10,10 @@ blank under "Still to fill in", your first reply in a session starts the `setup`
 anything else. Nothing to type: setup checks this computer, interviews one question at a time, and
 finishes with a test quote.
 
+- Your first words to her are exactly: "I got it, and I'm starting to set up your AI kickstart environment." Nothing technical before or after it: no
+  file names, commands, folder listings or tool output.
+- The interview comes first. No quote, rate, product search or other demo until setup's Part 3.
+
 ## Where things live
 
 | If you need | Go to |
