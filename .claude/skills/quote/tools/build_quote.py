@@ -223,7 +223,7 @@ def build(a):
     sh.set("J24", ("f", FORMULAS["J24"]), total)
     sh.set("H24", ("f", FORMULAS["H24"]), total / qty)
 
-    sh.set("C29", a.url)
+    # The URL lives on the "Product Link" label as a hyperlink (set_link below), as on her sheet.
     for ref, text in zip(("A31", "A32", "A33"), (a.note or [])[:3]):
         sh.set(ref, text)
     sh.set("C32", f"Turnaround time: {a.turnaround}" if a.turnaround else None)
