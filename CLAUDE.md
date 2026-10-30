@@ -48,6 +48,7 @@ Type the name with a slash, or just say what you want and Claude picks the skill
 | `/order-handoff` | Turns an accepted quote into the order summary and supplier PO text |
 | `/daily-focus` | Turns her morning dictation into today's ordered list |
 | `/field-notes` | Turns visit notes (photo or dictation) into tasks by customer |
+| `/images` | Makes pictures: a customer's logo on a product, social posts, flyers (KIE.ai) |
 | `/meetings` | Turns a meeting (Fireflies, Notion, a Copilot recap, a transcript) into notes and tasks |
 | `/pipedrive` | Adds a contact and activity to Pipedrive, or gives paste-ready text |
 | `/copilot-inside` | The handoff for Outlook and M-Files work through Copilot |

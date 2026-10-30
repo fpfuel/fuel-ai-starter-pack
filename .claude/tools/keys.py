@@ -7,8 +7,12 @@ installed. Names the tools use:
   SAGE_ACCT_ID, SAGE_LOGIN_ID, SAGE_API_KEY      SAGE Connect (product search)
   PIPEDRIVE_API_TOKEN, PIPEDRIVE_DOMAIN           Pipedrive (contacts and activities)
   FIREFLIES_API_KEY                               Fireflies (meeting transcripts), optional
+  KIE_API_KEY                                     KIE.ai (images), optional
 
   python .claude/tools/keys.py     lists which names are filled in. Never shows a value.
+  python .claude/tools/keys.py --set NAME
+                                   puts what she just copied (the clipboard) into the keys file
+                                   under NAME. The value never appears in the chat or the output.
 """
 
 import os
@@ -21,7 +25,7 @@ from xml.etree import ElementTree as ET
 PACK_ROOT = Path(__file__).resolve().parents[2]
 KEYS_FILE = PACK_ROOT / "secrets" / "keys.xlsx"
 NS = {"m": "http://schemas.openxmlformats.org/spreadsheetml/2006/main"}
-KNOWN = ("SAGE_ACCT_ID", "SAGE_LOGIN_ID", "SAGE_API_KEY", "PIPEDRIVE_API_TOKEN", "PIPEDRIVE_DOMAIN", "FIREFLIES_API_KEY")
+KNOWN = ("SAGE_ACCT_ID", "SAGE_LOGIN_ID", "SAGE_API_KEY", "PIPEDRIVE_API_TOKEN", "PIPEDRIVE_DOMAIN", "FIREFLIES_API_KEY", "KIE_API_KEY")
 
 _cache = None
 
@@ -90,7 +94,72 @@ def filled():
     return sorted(n for n in names if get(n))
 
 
+
+def _clipboard():
+    """What she last copied, as text. Tries tkinter, then the system's own clipboard command."""
+    import subprocess
+    try:
+        import tkinter
+        tk = tkinter.Tk()
+        tk.withdraw()
+        try:
+            return tk.clipboard_get()
+        finally:
+            tk.destroy()
+    except Exception:
+        pass
+    for cmd in (["powershell", "-NoProfile", "-Command", "Get-Clipboard"], ["pbpaste"],
+                ["xclip", "-selection", "clipboard", "-o"]):
+        try:
+            r = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+            if r.returncode == 0:
+                return r.stdout
+        except (OSError, subprocess.SubprocessError):
+            continue
+    return ""
+
+
+def set_from_clipboard(name):
+    """Write the clipboard into secrets/keys.xlsx under name. Prints only what happened, never the value."""
+    global _cache
+    value = (_clipboard() or "").strip()
+    if not value:
+        sys.exit("The clipboard is empty. Click Copy next to the key, then try again.")
+    if any(c.isspace() for c in value) or len(value) < 8 or len(value) > 300:
+        sys.exit("What is copied does not look like a key (it has spaces, or is too short or too long). "
+                 "Copy just the key, then try again.")
+    try:
+        import openpyxl
+    except ImportError:
+        sys.exit("Needs openpyxl first: python -m pip install openpyxl")
+    if not KEYS_FILE.exists():
+        example = KEYS_FILE.with_name("keys.example.xlsx")
+        wb = openpyxl.load_workbook(example) if example.exists() else openpyxl.Workbook()
+        if not example.exists():
+            wb.active.append(["name", "value"])
+    else:
+        wb = openpyxl.load_workbook(KEYS_FILE)
+    ws = wb.worksheets[0]
+    for row in ws.iter_rows(min_row=2):
+        if row[0].value == name:
+            row[1].value = value
+            break
+    else:
+        ws.append([name, value])
+    KEYS_FILE.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        wb.save(KEYS_FILE)
+    except PermissionError:
+        sys.exit("Close keys.xlsx in Excel, then try again.")
+    _cache = None
+    print(f"{name}: saved to secrets/keys.xlsx ({len(value)} characters).")
+
 if __name__ == "__main__":
+    if len(sys.argv) == 3 and sys.argv[1] == "--set":
+        if not re.fullmatch(r"[A-Z][A-Z0-9_]{1,40}", sys.argv[2]):
+            sys.exit("Key names look like KIE_API_KEY: capital letters, numbers and underscores.")
+        set_from_clipboard(sys.argv[2])
+        sys.exit(0)
     print("keys file:", "found" if KEYS_FILE.exists() else "not created yet (copy secrets/keys.example.xlsx)")
     for n in sorted(set(KNOWN) | set(_sheet())):
         print(f"  {n}: {'filled in' if get(n) else 'empty'}")

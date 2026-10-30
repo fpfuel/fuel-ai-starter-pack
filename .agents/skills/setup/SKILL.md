@@ -95,6 +95,21 @@ A conversation, not a form. One question per message, always.
    `python .agents/skills/meetings/tools/fireflies.py check` and read back how many meetings it
    found. Then run `python .claude/tools/keys.py` and read
    back which names are filled (never values).
+9b. Images (optional). Ask: "Want me to make images for you, like a customer's logo on a mug, a
+    social post or a flyer? It runs on KIE.ai, pay as you go, about 4 to 16 cents a picture." If no,
+    write "Images: not set up" under "Tools outside the firewall" in `Brain/Context/work.md` and move
+    on. If yes, one step at a time, waiting for "done" after each:
+    1. "Open https://kie.ai and create an account."
+    2. "Add credits at https://kie.ai/pricing. Five dollars is about a hundred pictures." Payment is
+       hers; never ask for card details.
+    3. "Open https://kie.ai/api-key, create a key if there is none, and click Copy next to it."
+    4. Run `python .claude/tools/keys.py --set KIE_API_KEY`. It takes the key from her clipboard
+       and saves it in her keys file; she pastes nothing. If it says the clipboard does not look
+       like a key, ask her to click Copy again and rerun.
+    5. Run `python .agents/skills/images/tools/kie_image.py check` and read back her credits.
+    6. Offer one test picture (about 4 cents): "Want a quick test, say a white mug with your
+       name on it?" If yes, run `/images` and give her the saved file.
+    Write "Images: KIE.ai, set up <date>" under "Tools outside the firewall".
 10. Never write anything from inside the firewall: no Outlook content, no M-Files data, no
     company logins. If she offers one, decline in one sentence and move on.
 
