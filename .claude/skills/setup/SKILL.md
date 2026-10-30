@@ -69,6 +69,8 @@ A conversation, not a form. One question per message, always.
    saved email or an export, or should we only work from what Copilot summarizes?" Write her
    answer in place of the "Email exports" line in `.claude/rules/boundaries.md`.
 9. Keys (optional; skip if she wants): SAGE product search and Pipedrive need her own details.
+   Run `python .claude/tools/keys.py` first. Anything already filled in is ready: say so in one
+   line and ask only for what is empty.
    Ask her to open `secrets/keys.example.xlsx`, save a copy in the same folder as `keys.xlsx`, and
    paste the values there herself. Never in chat. SAGE: account number, login and API key from
    sagemember.com, Users tab. Pipedrive: her company name before `.pipedrive.com`, and the token
