@@ -4,7 +4,8 @@
      node ups_ctc.mjs --from=60143 --to=96720 --weight=10 [--length=12 --width=24 --height=18]
                       [--qty=1] [--residential] [--date=YYYY-MM-DD] [--cdp=http://127.0.0.1:9222]
                       [--probe]   (dump the page after each step instead of parsing results)
-                      [--show]    (leave the rendered quote on screen: raises the Chrome window)   */
+                      [--show]    (leave the rendered quote on screen: raises the Chrome window)
+                      [--shot=FILE.png]  (walk in a new tab, save UPS's results page as a picture, close the tab)   */
 import { chromium } from 'playwright-core';
 const args = Object.fromEntries(process.argv.slice(2).map(a => { const m = a.match(/^--([^=]+)=(.*)$/); return m ? [m[1], m[2]] : [a.replace(/^--/, ''), true]; }));
 const need = k => { if (!args[k]) { console.error('missing --' + k); process.exit(2); } return args[k]; };
@@ -12,9 +13,10 @@ const FROM = need('from'), TO = need('to'), WEIGHT = need('weight');
 const URL = 'https://wwwapps.ups.com/ctc/request?loc=en_US';
 const T0 = Date.now(); const lap = (l) => { if (args.timing) console.error(l.padEnd(22), ((Date.now() - T0) / 1000).toFixed(1) + 's'); };
 
-const browser = await chromium.connectOverCDP(args.cdp || 'http://127.0.0.1:9222', { timeout: 15000 });
+const browser = await chromium.connectOverCDP(args.cdp || `http://127.0.0.1:${process.env.UPS_CHROME_PORT || 9222}`, { timeout: 15000 });
 const ctx = browser.contexts()[0];
-let page = ctx.pages().find(p => p.url().includes('/ctc/')) || await ctx.newPage();
+let page = args.shot ? await ctx.newPage() : (ctx.pages().find(p => p.url().includes('/ctc/')) || await ctx.newPage());
+if (args.shot) await page.setViewportSize({ width: 1280, height: 900 }).catch(() => {});
 const netlog = [];
 if (args.netlog) page.on('response', async r => { const req = r.request(); const t = req.resourceType(); if (!/xhr|fetch|document/.test(t)) return; const ct = (r.headers()['content-type'] || '').split(';')[0]; let body = ''; try { if (/json|html|text/.test(ct)) body = (await r.text()).slice(0, 160).replace(/\s+/g, ' '); } catch {} netlog.push({ at: ((Date.now() - T0) / 1000).toFixed(1), t, m: req.method(), st: r.status(), ct, url: req.url().slice(0, 150), post: (req.postData() || '').slice(req.url().includes('/ctc/results') ? 0 : 0, req.url().includes('/ctc/results') ? 100000 : 500), body: req.url().includes('/ctc/results') ? (await r.text().catch(() => '')) : body }); });
 lap('connected'); await page.goto(URL, { waitUntil: 'domcontentloaded', timeout: 60000 });
@@ -125,6 +127,29 @@ lap('parsed');
 if (args.show) {
   // Bring the Chrome window to the front with the rendered quote on screen (it is normally parked off-screen).
   try { const cdp = await ctx.newCDPSession(page); const { windowId } = await cdp.send('Browser.getWindowForTarget'); await cdp.send('Browser.setWindowBounds', { windowId, bounds: { left: 80, top: 60, width: 1280, height: 900, windowState: 'normal' } }); await page.bringToFront(); console.error('UPS quote is on screen in the Chrome window'); } catch (e) { console.error('could not raise the window: ' + e.message); }
+}
+if (args.shot) {
+  // The picture is UPS's own page: their header, the shipment as entered, every service, and their timestamp.
+  // Cookie notice and chat bubble float over the results, so fixed-position layers are hidden first.
+  const clip = await page.evaluate(() => {
+    const ot = document.querySelector('#onetrust-consent-sdk'); if (ot) ot.style.setProperty('display', 'none', 'important');
+    for (const e of document.querySelectorAll('body *')) {
+      if (getComputedStyle(e).position !== 'fixed') continue;
+      const r = e.getBoundingClientRect();
+      if (r.top > 150 || r.height > 400) e.style.setProperty('display', 'none', 'important');
+    }
+    const t = [...document.querySelectorAll('table.dataTable')].find(x => x.offsetParent);
+    const box = (t && (t.closest('.appLvl') || t.closest('#results'))) || document.querySelector('#results');
+    const r = box ? box.getBoundingClientRect() : null;
+    return { width: document.documentElement.scrollWidth, bottom: r ? Math.ceil(r.bottom + window.scrollY + 24) : document.documentElement.scrollHeight, found: !!box };
+  });
+  res.shot = '';
+  if (res.services.length) {
+    await page.evaluate(() => window.scrollTo(0, 0)); await page.waitForTimeout(400);
+    await page.screenshot({ path: String(args.shot), fullPage: true, clip: { x: 0, y: 0, width: Math.min(clip.width, 1280), height: clip.bottom }, timeout: 30000 });
+    res.shot = String(args.shot);
+  }
+  await page.close().catch(() => {});
 }
 if (args.netlog) { console.error(JSON.stringify(netlog, null, 1)); }
 console.log(JSON.stringify(res, null, 1));

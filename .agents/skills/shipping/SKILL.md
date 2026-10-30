@@ -27,16 +27,22 @@ when the supplier has not quoted yet. Never estimate a rate; run the tool or ask
 4. Read back the top three lines: carrier, service, total for all cartons, arrival day. Then say
    which one you would put on the quote and why (price, speed, guaranteed day).
 5. Put the source links under the figures. USPS lines link to the rendered USPS page for that
-   exact shipment. UPS gives the calculator page plus the inputs, or the window from `--show-ups`.
+   exact shipment. UPS has no link that opens a filled-in quote, so the source is a picture of
+   UPS's own results page for that shipment (their logo, the shipment as entered, every service,
+   and UPS's timestamp), saved under `internal/Domains/Work/ASB/sourcing/ups-pages/` about 20
+   seconds after the rates print. The command prints its path; wait for the file before citing
+   it. On the review page the UPS "source" link opens it, with a button that shows it live.
 6. Record the quote in `internal/Domains/Work/ASB/suppliers-and-pricing.md` under freight seen so far, with the
    date, the lane, and the per-carton figures.
 
 ## What the tool needs
 
 - USPS: nothing. Plain Python, no browser, no account.
-- UPS: a normal Google Chrome window that the tool attaches to. `compare_rates.py` starts one
-  automatically (`tools/ups_chrome.py`), parked off-screen. Leave it open. UPS refuses automated
-  browsers, so this window is the only way to get its rates without a UPS account.
+- UPS: a normal Google Chrome window that the tool attaches to, or Microsoft Edge when Chrome is
+  not installed. `compare_rates.py` starts one automatically (`tools/ups_chrome.py`), parked
+  off-screen. Leave it open. UPS refuses automated browsers, so this window is the only way to get
+  its rates without a UPS account. The first rate after the window starts takes a few seconds
+  longer while UPS sets up its session; the tool waits and retries on its own.
 - Both: Node.js installed, for the UPS script.
 
 ## Reading the numbers

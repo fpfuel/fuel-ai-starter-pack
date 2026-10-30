@@ -53,8 +53,10 @@ def find_chrome():
                      os.environ.get("LOCALAPPDATA")):
             if base:
                 candidates.append(Path(base) / "Google" / "Chrome" / "Application" / "chrome.exe")
+                candidates.append(Path(base) / "Microsoft" / "Edge" / "Application" / "msedge.exe")
     elif platform.system() == "Darwin":
         candidates.append(Path("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"))
+        candidates.append(Path("/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge"))
     for name in ("google-chrome", "google-chrome-stable", "chromium", "chromium-browser"):
         found = shutil.which(name)
         if found:
@@ -143,7 +145,7 @@ def main():
         "UPS rates": (local and bool(node) and r["chrome"] and playwright,
                       "works" if local and node and r["chrome"] and playwright else
                       "only on your own computer" if not local else
-                      "needs Node.js" if not node else "needs Google Chrome" if not r["chrome"] else
+                      "needs Node.js" if not node else "needs Google Chrome or Microsoft Edge" if not r["chrome"] else
                       "needs its browser driver (run with --fix)"),
         "SAGE product search": (sage and r["net_sage"],
                                 "works" if sage and r["net_sage"] else
@@ -162,7 +164,7 @@ def main():
         return
     print(f"Running {'in the cloud' if r['where'] == 'cloud' else 'on this computer'} "
           f"({r['system']}, Python {r['python']}, Node {r['node'] or 'not installed'}, "
-          f"Chrome {'found' if r['chrome'] else 'not found'})")
+          f"browser {'found' if r['chrome'] else 'not found'})")
     for item in r["fixed"]:
         print(f"  fixed: {item}")
     width = max(len(k) for k in r["can"])

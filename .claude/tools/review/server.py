@@ -11,7 +11,11 @@ Routes
   GET  /api/runs              newest first: [{file, generated, query, qty, shipToLabel, image}]
   GET  /api/latest            newest run, 204 when none
   GET  /api/run?f=NAME        one run
-  POST /api/ups-show          {run, candidateId} -> raises the real UPS quote in Chrome (own computer only)
+  GET  /ups-page/NAME.png     the source behind a UPS rate: UPS's own results page for that shipment,
+                              saved as a picture by ups_proof.py (a waiting page until it is saved)
+  GET  /ups-page/NAME.png?raw=1   the picture itself
+  POST /api/ups-show          {run, candidateId} or {page: NAME.png} -> raises the real UPS quote in
+                              Chrome (own computer only)
   POST /api/quote             {run, candidateId, optionIndex, customer, company, address1,
                                address2, phone, unitCost, turnaround} -> builds the xlsx with
                                the quote tool, returns {ok, file, lines}
@@ -224,12 +228,133 @@ def in_cloud():
     return bool(os.environ.get("CLAUDE_CODE_REMOTE") or os.environ.get("CLAUDE_CODE_REMOTE_SESSION_ID"))
 
 
+UPS_CTC = "https://wwwapps.ups.com/ctc/request?loc=en_US"
+PAGE_CSS = """
+  :root { --bg: #fff; --ink: #111; --ink-2: #555; --line: #e5e5e5; --frame: #f3f3f3;
+          --sans: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--frame); color: var(--ink); font: 15px/1.5 var(--sans); }
+  header { position: sticky; top: 0; z-index: 2; background: var(--bg); border-bottom: 1px solid var(--line);
+           display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px; padding: 10px 20px; min-height: 60px; }
+  header h1 { grid-column: 2; margin: 0; font-size: 17px; font-weight: 600; text-align: center; }
+  header .act { grid-column: 3; justify-self: end; }
+  .btn { display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px; border: 1px solid var(--ink);
+         border-radius: 999px; background: var(--bg); color: var(--ink); font: inherit; font-size: 14px; cursor: pointer; text-decoration: none; }
+  .btn:hover { background: var(--ink); color: var(--bg); }
+  .btn:focus-visible { outline: 2px solid #2a78d6; outline-offset: 2px; }
+  .btn:disabled { opacity: .5; cursor: default; }
+  .wrap { max-width: 1000px; margin: 0 auto; padding: 20px 16px 48px; }
+  .note { background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 12px 16px; margin: 0 0 16px; color: var(--ink-2); font-size: 14px; }
+  .note b { color: var(--ink); font-weight: 600; }
+  .doc { background: var(--bg); border: 1px solid var(--line); box-shadow: 0 1px 3px rgba(0,0,0,.08); margin: 0; }
+  .doc img { display: block; width: 100%; height: auto; }
+  .msg { background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 28px 24px; text-align: center; }
+  .msg h2 { margin: 0 0 6px; font-size: 18px; font-weight: 600; }
+  .msg p { margin: 0 auto; max-width: 52ch; color: var(--ink-2); }
+  .zoom { display: none; margin: 0; padding: 8px; font-size: 13px; color: var(--ink-2); text-align: center; }
+  #live-msg { display: block; color: var(--ink); }
+  #live-msg:empty { display: none; }
+  @media (max-width: 640px) { header { grid-template-columns: 1fr auto; padding: 8px 12px; }
+    header h1 { grid-column: 1; text-align: left; font-size: 16px; } header .act { grid-column: 2; } .wrap { padding: 12px 8px 32px; } .zoom { display: block; } }
+"""
+REF = 'data-ref="https://mobbin.com/screens/ff3c2be2-17af-4d0d-981f-ba2b18731e34"'
+
+
+def _esc(s):
+    return (str(s if s is not None else "").replace("&", "&amp;").replace("<", "&lt;")
+            .replace(">", "&gt;").replace('"', "&quot;"))
+
+
+def _lane_text(lane):
+    dims = [lane.get(k) for k in ("length", "width", "height")]
+    shape = (" x ".join(f"{float(d):g}" for d in dims) + " in, ") if all(dims) else ""
+    return (f"Ship from {_esc(lane.get('from'))} to {_esc(lane.get('to'))}, one carton of "
+            f"{float(lane.get('weight') or 0):g} lb, {shape}My Packaging, paid at a UPS location")
+
+
+def ups_page(folder, name, raw=False):
+    """The source behind a UPS rate: the picture of UPS's results page, in a short page around it."""
+    pages = os.path.join(folder, "ups-pages")
+    png = os.path.join(pages, name)
+    if raw:
+        try:
+            with open(png, "rb") as fh:
+                return 200, fh.read(), "image/png"
+        except OSError:
+            return 404, {"error": "not saved"}, None
+    try:
+        with open(os.path.join(pages, name[:-4] + ".json"), "r", encoding="utf-8") as fh:
+            st = json.load(fh)
+    except (OSError, ValueError):
+        st = {}
+    lane = st.get("lane") or {}
+    saved = os.path.exists(png)
+    refresh = ""
+    if saved:
+        when = time.strftime("%b %d, %Y at %I:%M %p", time.localtime(os.path.getmtime(png))).replace(" 0", " ")
+        note = (f"<b>Saved from ups.com</b> on {_esc(when)}. "
+                f"{_lane_text(lane) + '. ' if lane else ''}UPS retail prices, no UPS account.")
+        body = (f'<figure class="doc" data-region="ups-page" {REF} data-took="the document itself, framed on the grey page '
+                f'at full width with a light border">'
+                f'<a href="/ups-page/{_esc(name)}?raw=1" target="_blank" rel="noopener" title="Open the picture full size">'
+                f'<img src="/ups-page/{_esc(name)}?raw=1" alt="UPS Calculate Time and Cost results for this shipment"></a>'
+                f'<figcaption class="zoom">Tap the picture to open it full size.</figcaption></figure>')
+    elif st.get("state") == "pending":
+        refresh = '<meta http-equiv="refresh" content="4">'
+        note = f"<b>Saving the UPS page for this shipment.</b> {_lane_text(lane) + '.' if lane else ''}"
+        body = (f'<section class="msg" data-region="ups-page-waiting" {REF} data-took="the document area, holding a '
+                f'short message while the page is saved"><h2>Almost there</h2><p>The UPS results page for this '
+                f"shipment is being saved, about 20 seconds per product. This page refreshes by itself.</p></section>")
+    else:
+        why = st.get("error") or "it was not saved"
+        note = f"<b>Could not save the UPS page</b> for this shipment ({_esc(why)})."
+        body = (f'<section class="msg" data-region="ups-page-missing" {REF} data-took="the document area, holding a '
+                f'short message in place of the document"><h2>Check it on ups.com</h2><p>'
+                f"{_lane_text(lane) + '. ' if lane else ''}Show it live has UPS work it out again in Chrome.</p></section>")
+    action = (f'<button class="btn" id="live" type="button" data-page="{_esc(name)}">Show it live on ups.com</button>'
+              if lane and not in_cloud() else f'<a class="btn" href="{UPS_CTC}" target="_blank" rel="noopener">UPS calculator</a>')
+    html = f"""<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">{refresh}
+<title>UPS rate source</title><link rel="icon" href="/favicon.svg"><style>{PAGE_CSS}</style></head>
+<body>
+<header data-region="ups-page-header" {REF} data-took="centred title bar with the one action at the right"><h1>UPS rate source</h1><div class="act">{action}</div></header>
+<main class="wrap">
+<aside class="note" data-region="ups-page-note" {REF} data-took="the info band above the document">{note} <span id="live-msg" role="status"></span></aside>
+{body}
+</main>
+<script>
+const b = document.getElementById('live');
+if (b) b.addEventListener('click', async () => {{
+  const m = document.getElementById('live-msg'); b.disabled = true; m.textContent = 'Opening UPS in Chrome, about 20 seconds.';
+  try {{
+    const r = await fetch('/api/ups-show', {{ method: 'POST', headers: {{ 'Content-Type': 'application/json' }}, body: JSON.stringify({{ page: b.dataset.page }}) }});
+    const j = await r.json().catch(() => ({{}}));
+    m.textContent = r.ok ? 'Look for the Chrome window with the UPS page.' : (j.error || 'Could not open UPS.');
+  }} catch (e) {{ m.textContent = 'Could not open UPS.'; }}
+  setTimeout(() => {{ b.disabled = false; }}, 25000);
+}});
+</script>
+</body></html>"""
+    return 200, html, "text/html; charset=utf-8"
+
+
 def ups_show(review_dir, payload):
-    """Raise the real UPS Calculate Time and Cost page in Chrome with this candidate's shipment."""
+    """Raise the real UPS Calculate Time and Cost page in Chrome with this shipment on it."""
     if in_cloud():
         return 409, {"ok": False, "error": "The live UPS page opens only on your own computer."}
     if not shutil.which("node"):
         return 409, {"ok": False, "error": "Node.js is not installed, so the UPS page cannot be opened."}
+    page = payload.get("page")
+    if page is not None:
+        if not isinstance(page, str) or not safe_name(page, ".png"):
+            return 400, {"ok": False, "error": "bad page name"}
+        try:
+            with open(os.path.join(review_dir, "ups-pages", page[:-4] + ".json"), "r", encoding="utf-8") as fh:
+                lane = json.load(fh).get("lane") or {}
+        except (OSError, ValueError):
+            return 404, {"ok": False, "error": "shipment not found"}
+        return _launch_show(lane.get("from"), lane.get("to"), lane.get("weight"),
+                            [lane.get("length"), lane.get("width"), lane.get("height")])
     run = payload.get("run")
     if not isinstance(run, str) or not safe_name(run):
         return 400, {"ok": False, "error": "bad run name"}
@@ -242,10 +367,15 @@ def ups_show(review_dir, payload):
     if not cand or not cand.get("shipFromZip") or not k.get("lbs"):
         return 400, {"ok": False, "error": "this product has no ship-from ZIP or carton weight"}
     to = (data.get("request") or {}).get("shipTo")
-    args = ["node", os.path.join(SHIP_TOOLS, "ups_ctc.mjs"), f"--from={cand['shipFromZip']}", f"--to={to}",
-            f"--weight={float(k['lbs']):g}", "--show"]
-    if k.get("L") and k.get("W") and k.get("H"):
-        args += [f"--length={float(k['L']):g}", f"--width={float(k['W']):g}", f"--height={float(k['H']):g}"]
+    return _launch_show(cand["shipFromZip"], to, k["lbs"], [k.get("L"), k.get("W"), k.get("H")])
+
+
+def _launch_show(src, dst, lbs, dims):
+    if not (src and dst and lbs) or not re.fullmatch(r"\d{5}", str(src)) or not re.fullmatch(r"\d{5}", str(dst)):
+        return 400, {"ok": False, "error": "this shipment has no ship-from ZIP, ship-to ZIP or weight"}
+    args = ["node", os.path.join(SHIP_TOOLS, "ups_ctc.mjs"), f"--from={src}", f"--to={dst}", f"--weight={float(lbs):g}", "--show"]
+    if all(dims):
+        args += [f"--length={float(dims[0]):g}", f"--width={float(dims[1]):g}", f"--height={float(dims[2]):g}"]
     try:
         subprocess.run([sys.executable, os.path.join(SHIP_TOOLS, "ups_chrome.py")], capture_output=True,
                        text=True, timeout=60, creationflags=HIDE)
@@ -345,6 +475,17 @@ class Handler(BaseHTTPRequestHandler):
             return
         if path == "/api/quotes":
             self._send(200, list_quotes(self.quotes))
+            return
+        if path.startswith("/ups-page/"):
+            name = unquote(path[len("/ups-page/"):])
+            if not safe_name(name, ".png"):
+                self._send(400, {"error": "bad file name"})
+                return
+            status, body, ctype = ups_page(self.folder, name, raw=bool(parse_qs(url.query).get("raw")))
+            if ctype:
+                self._send(status, body, ctype)
+            else:
+                self._send(status, body)
             return
         if path.startswith("/quotes/"):
             name = unquote(path[len("/quotes/"):])

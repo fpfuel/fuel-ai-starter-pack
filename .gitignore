@@ -10,3 +10,6 @@ __pycache__/
 *.pyc
 node_modules/
 .tmp/
+
+# Pictures of the UPS page behind each UPS rate (kept on this computer, re-made on every run)
+internal/Domains/Work/ASB/sourcing/ups-pages/

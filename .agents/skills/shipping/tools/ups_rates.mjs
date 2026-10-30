@@ -40,13 +40,16 @@ function bodyFor(l) {
   return p.toString();
 }
 
-const browser = await chromium.connectOverCDP(args.cdp || 'http://127.0.0.1:9222', { timeout: 15000 });
+const browser = await chromium.connectOverCDP(args.cdp || `http://127.0.0.1:${process.env.UPS_CHROME_PORT || 9222}`, { timeout: 15000 });
 const ctx = browser.contexts()[0];
 let page = ctx.pages().find(p => p.url().includes('wwwapps.ups.com/ctc/'));
-if (!page) { page = await ctx.newPage(); await page.goto('https://wwwapps.ups.com/ctc/request?loc=en_US', { waitUntil: 'domcontentloaded', timeout: 60000 }); await page.waitForTimeout(2500); }
+const CTC = 'https://wwwapps.ups.com/ctc/request?loc=en_US';
+const settle = async () => { await page.waitForLoadState('load', { timeout: 30000 }).catch(() => {}); await page.waitForTimeout(2500); };
+if (!page) { page = await ctx.newPage(); await page.goto(CTC, { waitUntil: 'domcontentloaded', timeout: 60000 }); await settle(); }
+else if (await page.evaluate(() => document.readyState !== 'complete' || performance.now() < 8000).catch(() => true)) await settle();
 
 // Runs in the page: one fetch per lane, all in flight at once, parsed in the page.
-const results = await page.evaluate(async (bodies) => {
+const rateInPage = (bodies) => page.evaluate(async (bodies) => {
   const one = async (body) => {
     const resp = await fetch('/ctc/results', { method: 'POST', body, credentials: 'include', headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8', 'X-Requested-With': 'XMLHttpRequest' } });
     const html = await resp.text();
@@ -78,7 +81,22 @@ const results = await page.evaluate(async (bodies) => {
     return out;
   };
   return Promise.all(bodies.map(b => one(b).catch(e => ({ status: 0, services: [], notes: [String(e)], unavailable: false }))));
-}, lanes.map(bodyFor));
+}, bodies);
+// UPS reloads its own page once while a new session starts, which destroys the call in flight.
+const rateIn = (bodies) => rateInPage(bodies).catch(e => bodies.map(() => ({ status: 0, services: [], notes: [], unavailable: false, error: String(e.message || e).split(String.fromCharCode(10))[0] })));
+
+// A Chrome that has just started answers the first requests with 429 or an empty page until UPS's
+// session settles; retry only the lanes that came back with nothing, reloading the tab once.
+const bodies = lanes.map(bodyFor);
+const results = await rateIn(bodies);
+const empty = r => !r.services.length && (r.status !== 200 || !r.notes.length);
+for (let attempt = 1; attempt <= 4 && results.some(empty); attempt++) {
+  if (attempt === 2) { await page.goto(CTC, { waitUntil: 'domcontentloaded', timeout: 60000 }).catch(() => {}); await settle(); }
+  else await settle();
+  const idx = results.map((r, i) => (empty(r) ? i : -1)).filter(i => i >= 0);
+  const again = await rateIn(idx.map(i => bodies[i]));
+  idx.forEach((i, k) => { results[i] = again[k]; });
+}
 
 const out = lanes.map((l, i) => ({ id: l.id || String(i), ...results[i],
   request: { from: l.from, to: l.to, weightLbs: Number(l.weight), dims: l.length ? [l.length, l.width, l.height].map(Number) : null, qty: Number(l.qty || 1), residential: !!l.residential, packaging: 'My Packaging', rateBasis: 'retail, paid at a UPS location (no account)' } }));

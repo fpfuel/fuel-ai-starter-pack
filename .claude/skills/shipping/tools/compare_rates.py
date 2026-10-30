@@ -6,13 +6,15 @@
 One carton is quoted and multiplied by --cartons (default 1). USPS comes from usps_rates.py
 (no browser). UPS comes from ups_rates.mjs, which needs a plain Chrome open with remote debugging;
 ups_chrome.py starts one if none is running. A carrier that fails is reported, never hidden.
-Every USPS line carries a link that opens to the rendered rate page. UPS has no deep link; its
-source line gives the page and the inputs, and `--show-ups` walks the real page in the Chrome
-window and leaves it on screen.
+Every USPS line carries a link that opens to the rendered rate page. UPS has no deep link, so its
+source is a picture of UPS's own results page for this shipment, saved about 20 seconds after the
+rates print (ups_proof.py); `--show-ups` also walks the real page in the Chrome window and leaves
+it on screen.
 """
 
 import argparse
 import json
+import os
 import re
 import subprocess
 import sys
@@ -21,7 +23,10 @@ import urllib.request
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-CDP = "http://127.0.0.1:9222"
+sys.path.insert(0, str(HERE))
+import ups_proof  # noqa: E402
+
+CDP = f"http://127.0.0.1:{os.environ.get('UPS_CHROME_PORT') or 9222}"
 
 
 def _frac(s: str) -> float:
@@ -104,7 +109,12 @@ def main() -> None:
     rc, d, err, t = run(ups_cmd); timing["ups"] = t
     if rc == 0 and d.get("services"):
         inputs = f"ship from {a.src} US, ship to {a.dst} US, Simple Rate off, My Packaging, {a.lbs:g} lb" + (f", {a.length:g}x{a.width:g}x{a.height:g} in" if dims else "") + ", pay at a UPS location"
-        sources["UPS"] = "https://wwwapps.ups.com/ctc/request?loc=en_US  (enter: " + inputs + ")"
+        page = ups_proof.PAGES_DIR / f"{time.strftime('%Y%m%d-%H%M%S')}-{a.src}-{a.dst}-{a.lbs:g}lb.png"
+        if ups_proof.start([{"from": a.src, "to": a.dst, "weight": a.lbs, "length": a.length, "width": a.width,
+                             "height": a.height, "out": str(page)}]):
+            sources["UPS"] = f"{page}  (UPS's own results page for {inputs}; saved about 20 seconds after this prints)"
+        else:
+            sources["UPS"] = "https://wwwapps.ups.com/ctc/request?loc=en_US  (enter: " + inputs + ")"
         for s in d["services"]:
             rows.append({"carrier": "UPS", "service": s["service"], "perCartonUSD": s["totalUSD"], "onlinePerCartonUSD": None,
                          "delivery": s.get("deliveredBy") or "", "transitDays": s.get("daysInTransit"),

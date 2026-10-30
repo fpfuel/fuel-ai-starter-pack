@@ -280,6 +280,7 @@
   function srcLink(o, c) {
     if (o.carrier !== 'UPS') return `<a href="${esc(o.source)}" target="_blank" rel="noopener">source</a>`;
     if (STATIC) return `<span class="muted" title="Retype these at ups.com, Calculate Time and Cost">UPS: ${esc(o.inputs || '')}</span>`;
+    if (o.upsPage) return `<a href="/ups-page/${encodeURIComponent(o.upsPage)}" target="_blank" rel="noopener" title="The UPS results page for this shipment">source</a>`;
     return `<button type="button" class="link-btn ups-show" data-cand="${esc(c.id)}" title="${esc(o.inputs || '')}">source</button>`;
   }
   document.addEventListener('click', async e => {

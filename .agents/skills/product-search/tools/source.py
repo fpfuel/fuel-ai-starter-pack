@@ -40,6 +40,7 @@ def load(name: str, path: Path):
 sage = load("sage_connect", HERE / "sage_connect.py")
 usps = load("usps_rates", SHIP_TOOLS / "usps_rates.py")
 cmp = load("compare_rates", SHIP_TOOLS / "compare_rates.py")
+ups_proof = load("ups_proof", SHIP_TOOLS / "ups_proof.py")
 
 
 def f(v, default=None):
@@ -186,6 +187,9 @@ def main() -> None:
             c["goodsUSD"] = round(c["netAtQty"] * a.qty, 2); c["setupUSD"] = round(c["setupChg"], 2)
 
     date = dt.date.today().strftime("%m/%d/%Y")
+    slug = re.sub(r"[^a-z0-9]+", "-", a.query.lower()).strip("-")[:40]
+    run_stem = f"{dt.datetime.now().strftime('%Y-%m-%d-%H%M')}-{slug}"
+    ups_pages = []
     rateable = [c for c in cands if c["cartons"] and c["carton"]["lbs"]]
 
     def usps_one(c):
@@ -241,11 +245,14 @@ def main() -> None:
             c["freight"]["problems"].append("UPS: System Temporarily Unavailable, the tab needs a real page load" if lane.get("unavailable") else "UPS: no services parsed")
         else:
             inputs = f"ship from {c['shipFromZip']} to {a.to}, My Packaging, {k['lbs']:g} lb, {k['L']:g}x{k['W']:g}x{k['H']:g} in, pay at a UPS location"
+            page = ups_proof.PAGES_DIR / f"{run_stem}-{re.sub(r'[^A-Za-z0-9]+', '', str(c['id']))}.png"
+            ups_pages.append({"from": c["shipFromZip"], "to": a.to, "weight": k["lbs"], "length": k["L"], "width": k["W"],
+                              "height": k["H"], "out": str(page)})
             for s in lane["services"]:
                 opts.append({"carrier": "UPS", "service": s["service"], "totalUSD": round(s["totalUSD"] * c["cartons"], 2), "onlineTotalUSD": None,
                              "perCartonUSD": s["totalUSD"], "delivery": s.get("deliveredBy") or "", "transitDays": s.get("daysInTransit"),
                              "note": (f"billed at {s['billableWeight']}" if s.get("billableWeight") else ""),
-                             "source": "https://wwwapps.ups.com/ctc/request?loc=en_US", "inputs": inputs})
+                             "source": "https://wwwapps.ups.com/ctc/request?loc=en_US", "inputs": inputs, "upsPage": page.name})
         opts.sort(key=lambda o: o["totalUSD"])
         # landed basis: cheapest option that does not need repacking (supplier ships its own cartons)
         basis = next((o for o in opts if not o["note"].startswith("repack")), opts[0] if opts else None)
@@ -260,14 +267,14 @@ def main() -> None:
 
     T["total"] = round(time.time() - t0, 2)
     cands.sort(key=lambda c: (c["landed"] or {}).get("perUnitUSD", 9e9))
-    slug = re.sub(r"[^a-z0-9]+", "-", a.query.lower()).strip("-")[:40]
     result = {"schema": "karen-review/1", "generated": dt.datetime.now().astimezone().isoformat(timespec="seconds"),
               "request": {"query": a.query, "qty": a.qty, "shipTo": a.to, "shipToLabel": a.to_label, "minPrice": a.min_price, "maxPrice": a.max_price, "prompt": a.prompt},
               "timingSec": T, "queriesSpent": 1 + len(picks), "totalFound": search.get("totalFound"),
               "sources": {"sageSearchFile": str(search_file), "sageDetailFiles": detail_files}, "candidates": cands}
     REVIEW_DIR.mkdir(parents=True, exist_ok=True)
-    out = REVIEW_DIR / f"{dt.datetime.now().strftime('%Y-%m-%d-%H%M')}-{slug}.json"
+    out = REVIEW_DIR / f"{run_stem}.json"
     out.write_text(json.dumps(result, indent=1), encoding="utf-8")
+    ups_proof.start(ups_pages)  # pictures of UPS's own page, one per product, follow in the background
 
     if a.json:
         print(json.dumps(result, indent=1)); return
